@@ -5,7 +5,7 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotConstants;
 import frc.robot.RobotContainer;
-import frc.robot.display.SuperstructureVisualizer;
+import frc.robot.subsystems.superstructure.SuperstructureVisualizer;
 import lombok.Getter;
 import org.littletonrobotics.junction.Logger;
 

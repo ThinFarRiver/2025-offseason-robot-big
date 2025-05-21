@@ -1,4 +1,4 @@
-package frc.robot.display;
+package frc.robot.subsystems.superstructure;
 
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.Timer;
@@ -201,11 +201,11 @@ public class SuperstructureVisualizer {
             Pose3d coralPosition = robotPose.transformBy(new Transform3d(INTAKE_CENTER.plus(new Translation3d(INTAKE_LENGTH/2,0,0).rotateBy(intakeRotation)), intakeRotation));
             
             // Log the Coral pose 3D
-            Logger.recordOutput("Superstructure/Coral/InakeCoral", 
+            Logger.recordOutput("Superstructure/Visualizer/Gamepiece/IntakeCoral", 
                     coralPosition);
         } else {
             // If no coral is detected, log an empty pose
-            Logger.recordOutput("Superstructure/Coral/InakeCoral", new Pose3d());
+            Logger.recordOutput("Superstructure/Visualizer/Gamepiece/IntakeCoral", new Pose3d());
         }
         if (GamepieceTracker.getInstance().isEndeffectorHasCoral()) {
             Pose3d robotPose = new Pose3d(Swerve.getInstance().getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp()));
@@ -223,9 +223,9 @@ public class SuperstructureVisualizer {
                 endEffectorPosition.plus(new Translation3d(-END_EFFECTOR_LENGTH_CORAL, 0, END_EFFECTOR_MOUNT_ARM_LENGTH).rotateBy(endEffectorRotation)),
                 endEffectorRotation));
             
-            Logger.recordOutput("Superstructure/Coral/EECoral", coralPosition);
+            Logger.recordOutput("Superstructure/Visualizer/Gamepiece/EECoral", coralPosition);
         } else {
-            Logger.recordOutput("Superstructure/Coral/EECoral", new Pose3d());
+            Logger.recordOutput("Superstructure/Visualizer/Gamepiece/EECoral", new Pose3d());
         }
         if (GamepieceTracker.getInstance().isEndeffectorHasAlgae()) {
                 Pose3d robotPose = new Pose3d(Swerve.getInstance().getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp()));
@@ -243,9 +243,9 @@ public class SuperstructureVisualizer {
                     endEffectorPosition.plus(new Translation3d(END_EFFECTOR_LENGTH_ALGAE, 0, END_EFFECTOR_MOUNT_ARM_LENGTH).rotateBy(endEffectorRotation)),
                     endEffectorRotation));
                 
-                Logger.recordOutput("Superstructure/Coral/EEAlgae", coralPosition);
+                Logger.recordOutput("Superstructure/Visualizer/Gamepiece/EEAlgae", coralPosition);
             } else {
-                Logger.recordOutput("Superstructure/Coral/EEAlgae", new Pose3d());
+                Logger.recordOutput("Superstructure/Visualizer/Gamepiece/EEAlgae", new Pose3d());
             }
     }
 
@@ -263,7 +263,7 @@ public class SuperstructureVisualizer {
         logCoralPose3D();
 
         // Log 2D mechanisms
-        Logger.recordOutput("Superstructure/Elevator/Mechanism2d", elevatorMechanism);
-        Logger.recordOutput("Superstructure/Intake/Mechanism2d", intakeMechanism);
+        Logger.recordOutput("Superstructure/Visualizer/Elevator/Mechanism2d", elevatorMechanism);
+        Logger.recordOutput("Superstructure/Visualizer/Intake/Mechanism2d", intakeMechanism);
     }
 }
