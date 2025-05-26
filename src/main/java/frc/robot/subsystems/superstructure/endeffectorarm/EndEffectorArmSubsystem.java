@@ -40,11 +40,6 @@ import java.util.function.DoubleSupplier;
 
 public class EndEffectorArmSubsystem extends SubsystemBase {
     public static final String NAME = "EndEffectorArm";
-
-    private final Timer algaeShootTimer = new Timer();
-    private final Timer isCoralShootingStartedTimer = new Timer();
-    private final Timer simGamepieceTimer = new Timer();
-
     // IO devices and their inputs
     private final EndEffectorArmPivotIO armPivotIO;
     private final EndEffectorArmPivotIOInputsAutoLogged armPivotIOInputs = new EndEffectorArmPivotIOInputsAutoLogged();

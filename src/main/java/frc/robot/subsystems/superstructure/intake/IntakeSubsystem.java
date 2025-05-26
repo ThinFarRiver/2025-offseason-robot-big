@@ -29,9 +29,11 @@ public class IntakeSubsystem extends RollerSubsystem {
     private final BeambreakIOInputsAutoLogged BBInputs = new BeambreakIOInputsAutoLogged();
 
 
-    @Getter@AutoLogOutput(key = "Intake/setPoint")
+    @Getter
+    @AutoLogOutput(key = "Intake/setPoint")
     private double wantedAngle = 0.0;
-    @Getter@AutoLogOutput(key = "Intake/atGoal")
+    @Getter
+    @AutoLogOutput(key = "Intake/atGoal")
     private boolean atGoal = false;
 
     public IntakeSubsystem(
