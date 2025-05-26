@@ -67,9 +67,8 @@ public enum SuperstructureState {
         .pose(Preset.CORAL_GROUND_INTAKE.getPose())
         .intakeVolts(() -> IntakeConstants.INTAKE_VOLTAGE.get())
         .build()),
-    IDLE(CORAL_GROUND_INTAKE.getValue().toBuilder()
-        .intakeVolts(() -> 0)
-        .endEffectorVolts(() -> 0)
+    IDLE(SuperstructureStateData.builder()
+        .pose(Preset.IDLE.getPose())
         .build()),
     AVOID(SuperstructureStateData.builder()
         .pose(Preset.AVOID.getPose())

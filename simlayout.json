@@ -1,0 +1,230 @@
+{
+  "hubs": [
+    {
+      "x": 309,
+      "y": 86,
+      "width": 1101,
+      "height": 730,
+      "state": {
+        "sidebar": {
+          "width": 435,
+          "expanded": [
+            "/RealOutputs",
+            "/RealOutputs/swerve/localizer",
+            "/RealOutputs/Superstructure",
+            "/RealOutputs/Superstructure/Elevator",
+            "/RealOutputs/Superstructure/Intake",
+            "/SystemStats",
+            "/RealOutputs/Intake",
+            "/RealOutputs/ReefAimCommandAuto",
+            "/RealOutputs/swerve",
+            "/RealOutputs/Superstructure/Coral",
+            "/RealOutputs/ReefAimCommand",
+            "/RealOutputs/EdgeCase",
+            "/AdvantageKit",
+            "/AdvantageKit/RealOutputs",
+            "/AdvantageKit/RealOutputs/Superstructure",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Current",
+            "/AdvantageKit/RealOutputs/swerve",
+            "/AdvantageKit/RealOutputs/swerve/localizer",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Current/Elevator",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Current/Intake",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Setpoint",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Setpoint/Elevator",
+            "/AdvantageKit/RealOutputs/Elevator",
+            "/AdvantageKit/RealOutputs/EndEffectorArm",
+            "/AdvantageKit/Elevator",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Setpoint/Intake",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Current/Intake/Mechanism2d",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Current/Elevator/Mechanism2d",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Current/Intake/Mechanism2d/Current",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Goal",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Goal/Elevator",
+            "/AdvantageKit/RealOutputs/Superstructure/Visualizer/Goal/Intake"
+          ]
+        },
+        "tabs": {
+          "selected": 2,
+          "tabs": [
+            {
+              "type": 0,
+              "title": "",
+              "controller": null,
+              "controllerUUID": "l8iifui9w8pa5sjea6j1rmhyhvchec6c",
+              "renderer": "#/",
+              "controlsHeight": 0
+            },
+            {
+              "type": 1,
+              "title": "States",
+              "controller": {
+                "leftSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "/RealOutputs/Elevator/setPoint",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#e5b31b",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "/RealOutputs/ElevatorPosition",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#af2437",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "rightSources": [],
+                "discreteSources": [
+                  {
+                    "type": "stripes",
+                    "logKey": "/RealOutputs/Intake/SystemState",
+                    "logType": "String",
+                    "visible": true,
+                    "options": {
+                      "color": "#2b66a2"
+                    }
+                  }
+                ],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "type": null,
+                  "factor": 1
+                },
+                "rightUnitConversion": {
+                  "type": null,
+                  "factor": 1
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "fyv7oxkttas58qau77emwbloupat45dp",
+              "renderer": null,
+              "controlsHeight": 200
+            },
+            {
+              "type": 3,
+              "title": "mechenism",
+              "controller": {
+                "sources": [
+                  {
+                    "type": "robot",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/swerve/localizer/CoarsedFieldPose",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "Crab Bot"
+                    }
+                  },
+                  {
+                    "type": "mechanism",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/Superstructure/Visualizer/Current/Elevator/Mechanism2d",
+                    "logType": "Mechanism2d",
+                    "visible": true,
+                    "options": {}
+                  },
+                  {
+                    "type": "mechanism",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/Superstructure/Visualizer/Current/Intake/Mechanism2d",
+                    "logType": "Mechanism2d",
+                    "visible": true,
+                    "options": {}
+                  },
+                  {
+                    "type": "ghost",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/swerve/localizer/CoarsedFieldPose",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "Crab Bot",
+                      "color": "#00ff00"
+                    }
+                  },
+                  {
+                    "type": "mechanism",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/Superstructure/Visualizer/Setpoint/Elevator/Mechanism2d",
+                    "logType": "Mechanism2d",
+                    "visible": true,
+                    "options": {}
+                  },
+                  {
+                    "type": "mechanism",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/Superstructure/Visualizer/Setpoint/Intake/Mechanism2d",
+                    "logType": "Mechanism2d",
+                    "visible": true,
+                    "options": {}
+                  },
+                  {
+                    "type": "ghost",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/swerve/localizer/CoarsedFieldPose",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "Crab Bot",
+                      "color": "#ff0000"
+                    }
+                  },
+                  {
+                    "type": "mechanism",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/Superstructure/Visualizer/Goal/Elevator/Mechanism2d",
+                    "logType": "Mechanism2d",
+                    "visible": true,
+                    "options": {}
+                  },
+                  {
+                    "type": "mechanism",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/Superstructure/Visualizer/Goal/Intake/Mechanism2d",
+                    "logType": "Mechanism2d",
+                    "visible": true,
+                    "options": {}
+                  }
+                ],
+                "game": "2025 Field (Welded)",
+                "origin": "blue"
+              },
+              "controllerUUID": "1h0vzxrwbq8z5tfpiroiwpska44es0l8",
+              "renderer": {
+                "cameraIndex": -1,
+                "orbitFov": 50,
+                "cameraPosition": [
+                  8.321311371279451,
+                  3.1746877932058966,
+                  -7.778433405439204
+                ],
+                "cameraTarget": [
+                  8.751983372191884,
+                  -2.324749146607297,
+                  1.0966754690374856
+                ]
+              },
+              "controlsHeight": 173
+            },
+            {
+              "type": 4,
+              "title": "Table",
+              "controller": [
+                "NT:/AdvantageKit/RealOutputs/Superstructure/State",
+                "NT:/AdvantageKit/RealOutputs/Superstructure/Goal",
+                "NT:/AdvantageKit/RealOutputs/Superstructure/Next",
+                "NT:/AdvantageKit/RealOutputs/Superstructure/EdgeCommand"
+              ],
+              "controllerUUID": "2cv0euntv4mmvj484znkraete7tvd3sr",
+              "renderer": null,
+              "controlsHeight": 0
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "satellites": [],
+  "version": "4.1.6"
+}

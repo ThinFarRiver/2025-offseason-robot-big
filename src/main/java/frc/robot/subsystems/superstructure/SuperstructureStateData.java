@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public class SuperstructureStateData {
     @Builder.Default
-    private final SuperstructurePose pose = new SuperstructurePose(() -> 0.0, () -> Rotation2d.kZero, () -> Rotation2d.kZero);
+    private final SuperstructurePose pose = new SuperstructurePose(() -> 0.0, () -> 0.0, () -> 0.0);
 
     @Builder.Default private final DoubleSupplier intakeVolts = () -> 0.0;
     @Builder.Default private final DoubleSupplier endEffectorVolts = () -> 0.0;

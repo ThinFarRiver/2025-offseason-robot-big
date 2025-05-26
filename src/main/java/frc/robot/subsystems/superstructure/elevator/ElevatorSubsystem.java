@@ -5,7 +5,7 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.subsystems.elevator.ElevatorIOInputsAutoLogged;
+import frc.robot.subsystems.superstructure.elevator.ElevatorIOInputsAutoLogged;
 import lombok.Getter;
 
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -13,6 +13,8 @@ import org.littletonrobotics.junction.Logger;
 
 import static frc.robot.RobotConstants.ElevatorConstants;
 import static frc.robot.RobotContainer.elevatorIsDanger;
+
+import java.util.function.DoubleSupplier;
 
 public class ElevatorSubsystem extends SubsystemBase {
     @Getter
@@ -23,9 +25,11 @@ public class ElevatorSubsystem extends SubsystemBase {
     public double currentFilterValue = 0.0;
     @AutoLogOutput(key = "Elevator/zeroing")
     public boolean zeroing = false;
-    @Getter@AutoLogOutput(key = "Elevator/setPoint")
+    @Getter
+    @AutoLogOutput(key = "Elevator/setPoint")
     private double wantedPosition = ElevatorConstants.HOLD_EXTENSION_METERS.get();
-    @Getter@AutoLogOutput(key = "Elevator/atGoal")
+    @Getter
+    @AutoLogOutput(key = "Elevator/atGoal")
     private boolean atGoal = false;
     private boolean stopProfile = false;
 
@@ -56,8 +60,8 @@ public class ElevatorSubsystem extends SubsystemBase {
         return inputs.positionMeters;
     }   
 
-    public void setElevatorPosition(double position) {
-        wantedPosition = position;
+    public void setElevatorPosition(DoubleSupplier position) {
+        wantedPosition = position.getAsDouble();
     }
 
     public boolean elevatorAtGoal(double offset) {

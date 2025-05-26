@@ -21,7 +21,7 @@ import frc.robot.RobotConstants;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.beambreak.BeambreakIO;
 import frc.robot.subsystems.beambreak.BeambreakIOInputsAutoLogged;
-import frc.robot.subsystems.endeffectorarm.EndEffectorArmPivotIOInputsAutoLogged;
+import frc.robot.subsystems.superstructure.endeffectorarm.EndEffectorArmPivotIOInputsAutoLogged;
 import frc.robot.subsystems.roller.RollerIOInputsAutoLogged;
 import frc.robot.subsystems.roller.RollerIO;
 import frc.robot.subsystems.superstructure.DestinationSupplier;
@@ -29,36 +29,17 @@ import frc.robot.subsystems.superstructure.GamepieceTracker;
 import frc.robot.subsystems.superstructure.SuperstructureVisualizer;
 import frc.robot.utils.TimeDelayedBoolean;
 import lombok.Getter;
-import lombok.Setter;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 import static frc.robot.RobotConstants.CANIVORE_CAN_BUS_NAME;
 import static frc.robot.RobotConstants.EndEffectorArmConstants.*;
 import static frc.robot.RobotConstants.EndEffectorArmConstants.EndEffectorArmRollerGainsClass.*;
 
+import java.util.function.DoubleSupplier;
+
 public class EndEffectorArmSubsystem extends SubsystemBase {
     public static final String NAME = "EndEffectorArm";
-    // Static variables to hold the current values from TunableNumbers
-    private static double homeAngle = HOME_ANGLE.get();
-    private static double coralIntakeAngle = CORAL_INTAKE_ANGLE.get();
-    private static double coralOuttakeAngle = CORAL_OUTTAKE_ANGLE.get();
-    private static double coralPreShootAngle = CORAL_PRESHOOT_ANGLE.get();
-    private static double coralPreShootAngleL4 = CORAL_PRESHOOT_ANGLE_L4.get();
-    private static double coralPreShootAngleL1 = CORAL_PRESHOOT_ANGLE_L1.get();
-
-    private static double algaeIntakeAngle = ALGAE_INTAKE_ANGLE.get();
-    private static double algaeNetPreShootAngle = ALGAE_NET_PRESHOOT_ANGLE.get();
-    private static double algaeProcessorPreShootAngle = ALGAE_PROCESSOR_PRESHOOT_ANGLE.get();
-    private static double algaeProcessorShootVoltage = ALGAE_PROCESSOR_SHOOT_VOLTAGE.get();
-    private static double coralIntakeVoltage = CORAL_INTAKE_VOLTAGE.get();
-    private static double coralOuttakeVoltage = CORAL_OUTTAKE_VOLTAGE.get();
-    private static double coralShootVoltageL1 = CORAL_SHOOT_VOLTAGE_L1.get();
-    private static double algaeIntakeVoltage = ALGAE_INTAKE_VOLTAGE.get();
-
-    private static double coralHoldVoltage = CORAL_HOLD_VOLTAGE.get();
-    private static double algaeHoldVoltage = ALGAE_HOLD_VOLTAGE.get();
-    private static double coralShootVoltage = CORAL_SHOOT_VOLTAGE.get();
-    private static double algaeNetShootVoltage = ALGAE_NET_SHOOT_VOLTAGE.get();
 
     private final Timer algaeShootTimer = new Timer();
     private final Timer isCoralShootingStartedTimer = new Timer();
@@ -78,11 +59,10 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
     // Roller motor control
     private final RollerIO rollerIO;
 
-    private boolean algaeShootTimerStarted = false;
-    @Setter
-    private WantedState wantedState = WantedState.HOLD;
-    @Getter
-    private SystemState systemState = SystemState.HOLDING;
+    @Getter@AutoLogOutput(key = "EndEffectorArm/setPoint")
+    private double wantedAngle = 0.0;
+    @Getter@AutoLogOutput(key = "EndEffectorArm/atGoal")
+    private boolean atGoal = false;
 
     public EndEffectorArmSubsystem(
             EndEffectorArmPivotIO armPivotIO,
@@ -117,49 +97,6 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
             // If the robot is real, Update DestinationSupplier with current coral and algae states
             GamepieceTracker.getInstance().setEndeffectorHasCoral(coralBeambreakInputs.isBeambreakOn);
             GamepieceTracker.getInstance().setEndeffectorHasAlgae(algaeBeambreakInputs.isBeambreakOn);
-        } else {
-            //sim gamepiece tracking
-            if (systemState == SystemState.CORAL_INTAKING && GamepieceTracker.getInstance().isIntakeHasCoral() && isNearAngle(coralIntakeAngle)) {
-                GamepieceTracker.getInstance().setEndeffectorHasCoral(true);
-                GamepieceTracker.getInstance().setintakeHasCoral(false);
-            }
-            if (systemState == SystemState.CORAL_SHOOTING) {
-                GamepieceTracker.getInstance().setEndeffectorHasCoral(false);
-            }
-            if (systemState == SystemState.ALGAE_INTAKING && isNearAngle(algaeIntakeAngle)) {
-                GamepieceTracker.getInstance().setEndeffectorHasAlgae(true);
-            }
-            if (systemState == SystemState.ALGAE_NET_SHOOTING || systemState == SystemState.ALGAE_PROCESSOR_SHOOTING) {
-                GamepieceTracker.getInstance().setEndeffectorHasAlgae(false);
-            }
-        }
-
-        // Update danger flag based on arm position
-        RobotContainer.endeffectorIsDanger = !(
-                isNearAngle(coralIntakeAngle) ||
-                        (isNearAngle(coralPreShootAngle) && hasCoral()) ||
-                        (isNearAngle(coralPreShootAngleL1) && hasCoral()) ||
-                        (isNearAngle(coralPreShootAngleL4) && hasCoral()) ||
-                        (isNearAngle(algaeProcessorPreShootAngle, 10) && hasAlgae())
-        );
-
-        // Calculate current state transition
-        SystemState newState;
-        if (RobotContainer.elevatorIsDanger) {
-            // Force specific states while elevator is in danger
-            newState = switch (wantedState) {
-                case CORAL_OUTTAKE -> SystemState.CORAL_OUTTAKING;
-                case CORAL_INTAKE -> SystemState.CORAL_INTAKING;
-                case CORAL_SHOOT -> SystemState.CORAL_SHOOTING;
-                case CORAL_PRESHOOT -> SystemState.CORAL_PRESHOOTING;
-                case ALGAE_PROCESSOR_PRESHOOT -> SystemState.ALGAE_PROCESSOR_PRESHOOTING;
-                case ALGAE_PROCESSOR_SHOOT -> SystemState.ALGAE_PROCESSOR_SHOOTING;
-                case ALGAE_INTAKE -> SystemState.ALGAE_INTAKING;
-                default -> systemState;
-            };
-        } else {
-            // Normal state transitions when elevator is safe
-            newState = handleStateTransition();
         }
 
         // Process and log inputs
@@ -168,109 +105,15 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
         Logger.processInputs(NAME + "/Algae Beambreak", algaeBeambreakInputs);
         Logger.processInputs(NAME + "/Roller", armRollerIOInputs);
 
-        // Log the system state
-        Logger.recordOutput("EndEffectorArm/SystemState", systemState.toString());
         Logger.recordOutput("Flags/eeIsDanger", RobotContainer.endeffectorIsDanger);
         Logger.recordOutput("Flags/eeIsDangerOverride", RobotContainer.overrideEndEffectorDanger);
 
-        SuperstructureVisualizer.getInstance().updateEndEffector(armPivotIOInputs.currentAngleDeg);
-
-        // Apply the new state if it has changed
-        if (newState != systemState) {
-            systemState = newState;
-        }
-
-        // Handle actions based on current system state
-        switch (systemState) {
-            case CORAL_INTAKING:
-                rollerIO.setVoltage(coralIntakeVoltage);
-                armPivotIO.setPivotAngle(coralIntakeAngle);
-                break;
-
-            case CORAL_OUTTAKING:
-                rollerIO.setVoltage(coralOuttakeVoltage);
-                armPivotIO.setPivotAngle(coralOuttakeAngle);
-                break;
-
-            case CORAL_PRESHOOTING:
-                if (DestinationSupplier.getInstance().getCurrentElevSetpointCoral() == DestinationSupplier.elevatorSetpoint.L1) {
-                    armPivotIO.setPivotAngle(coralPreShootAngleL1);
-                }
-                else if(DestinationSupplier.getInstance().getCurrentElevSetpointCoral() == DestinationSupplier.elevatorSetpoint.L4){
-                    armPivotIO.setPivotAngle(coralPreShootAngleL4);
-                }
-                else {
-                    armPivotIO.setPivotAngle(coralPreShootAngle);
-                }
-                break;
-            case ALGAE_INTAKING:
-                rollerIO.setVoltage(algaeIntakeVoltage);
-                armPivotIO.setPivotAngle(algaeIntakeAngle);
-                break;
-
-            case ALGAE_NET_PRESHOOTING:
-                armPivotIO.setPivotAngle(algaeNetPreShootAngle);
-                break;
-
-            case ALGAE_NET_SHOOTING:
-                rollerIO.setVoltage(algaeNetShootVoltage);
-                break;
-
-            case ALGAE_PROCESSOR_PRESHOOTING:
-                armPivotIO.setPivotAngle(algaeProcessorPreShootAngle);
-                break;
-
-            case ALGAE_PROCESSOR_SHOOTING:
-                rollerIO.setVoltage(algaeProcessorShootVoltage);
-                break;
-
-            case HOLDING:
-                if (hasAlgae()) {
-                    rollerIO.setVoltage(algaeHoldVoltage);
-                    armPivotIO.setPivotAngle(coralIntakeAngle);
-                } else if (hasCoral()) {
-                    armPivotIO.setPivotAngle(homeAngle);
-                    rollerIO.setVoltage(coralHoldVoltage);
-                }
-                break;
-
-            case NEUTRAL:
-                rollerIO.stop();
-                armPivotIO.setPivotAngle(coralIntakeAngle);
-                break;
-
-            case CORAL_SHOOTING:
-                if (DestinationSupplier.getInstance().getCurrentElevSetpointCoral() == DestinationSupplier.elevatorSetpoint.L1) {
-                    rollerIO.setVoltage(coralShootVoltageL1);
-                } else {
-                    rollerIO.setVoltage(coralShootVoltage);
-                }
-                break;
-        }
+        // Update goal status and set pivot angle
+        atGoal = isNearAngle(wantedAngle);
+        armPivotIO.setPivotAngle(wantedAngle);
 
         // Update tunable numbers if tuning is enabled
         if (RobotConstants.TUNING) {
-            homeAngle = HOME_ANGLE.get();
-            coralIntakeAngle = CORAL_INTAKE_ANGLE.get();
-            coralOuttakeAngle = CORAL_OUTTAKE_ANGLE.get();
-            coralPreShootAngle = CORAL_PRESHOOT_ANGLE.get();
-            coralPreShootAngleL4 = CORAL_PRESHOOT_ANGLE_L4.get();
-            coralPreShootAngleL1 = CORAL_PRESHOOT_ANGLE_L1.get();
-            algaeIntakeAngle = ALGAE_INTAKE_ANGLE.get();
-            algaeNetPreShootAngle = ALGAE_NET_PRESHOOT_ANGLE.get();
-            algaeProcessorPreShootAngle = ALGAE_PROCESSOR_PRESHOOT_ANGLE.get();
-
-            coralIntakeVoltage = CORAL_INTAKE_VOLTAGE.get();
-            coralOuttakeVoltage = CORAL_OUTTAKE_VOLTAGE.get();
-            coralShootVoltageL1 = CORAL_SHOOT_VOLTAGE_L1.get();
-            algaeIntakeVoltage = ALGAE_INTAKE_VOLTAGE.get();
-            coralHoldVoltage = CORAL_HOLD_VOLTAGE.get();
-            algaeHoldVoltage = ALGAE_HOLD_VOLTAGE.get();
-
-            coralShootVoltage = CORAL_SHOOT_VOLTAGE.get();
-            algaeNetShootVoltage = ALGAE_NET_SHOOT_VOLTAGE.get();
-            algaeProcessorShootVoltage = ALGAE_PROCESSOR_SHOOT_VOLTAGE.get();
-
             // Update roller PID gains if tuning is enabled
             rollerIO.updateConfigs(
                 END_EFFECTOR_ARM_ROLLER_KP.get(),
@@ -284,110 +127,6 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
     }
 
     /**
-     * Handles the transition between states based on the current wanted state
-     *
-     * @return The new system state
-     */
-    private SystemState handleStateTransition() {
-        return switch (wantedState) {
-            case CORAL_INTAKE -> {
-                if (hasCoral()) {
-                    setWantedState(WantedState.HOLD);
-                    yield SystemState.HOLDING;
-                }
-                yield SystemState.CORAL_INTAKING;
-            }
-            case CORAL_OUTTAKE -> SystemState.CORAL_OUTTAKING;
-            case CORAL_PRESHOOT -> {
-                if (hasCoral()) {
-                    yield SystemState.CORAL_PRESHOOTING;
-                } else {
-                    yield SystemState.HOLDING;
-                }
-            }
-            case ALGAE_INTAKE -> {
-                if (hasAlgae()) {
-                    setWantedState(WantedState.HOLD);
-                    yield SystemState.HOLDING;
-                }
-                yield SystemState.ALGAE_INTAKING;
-            }
-            case HOLD -> {
-                if (!hasAlgae() && !hasCoral()) {
-                    yield SystemState.NEUTRAL;
-                }
-                yield SystemState.HOLDING;
-            }
-            case NEUTRAL -> SystemState.NEUTRAL;
-            case CORAL_SHOOT -> {
-                if (!isShootFinished()) {
-                    yield SystemState.CORAL_SHOOTING;
-                } else {
-                    if (!isCoralShootingStartedTimer.isRunning()) {
-                        isCoralShootingStartedTimer.start();
-                        yield SystemState.CORAL_SHOOTING;
-                    } else if (isCoralShootingStartedTimer.hasElapsed(CORAL_SHOOT_DELAY_TIME.get())) {
-                        isCoralShootingStartedTimer.stop();
-                        isCoralShootingStartedTimer.reset();
-                        setWantedState(WantedState.HOLD);
-                        yield SystemState.HOLDING;
-                    } else yield SystemState.CORAL_SHOOTING;
-                }
-            }
-            case ALGAE_NET_SHOOT -> {
-                if (hasAlgae()) {
-                    yield SystemState.ALGAE_NET_SHOOTING;
-                } else {
-                    if (!algaeShootTimerStarted) {
-                        algaeShootTimer.start();
-                        algaeShootTimerStarted = true;
-                        yield SystemState.ALGAE_NET_SHOOTING;
-                    } else if (algaeShootTimer.hasElapsed(0.3)) {
-                        algaeShootTimer.stop();
-                        algaeShootTimer.reset();
-                        algaeShootTimerStarted = false;
-                        setWantedState(WantedState.HOLD);
-                        yield SystemState.HOLDING;
-                    } else yield SystemState.ALGAE_NET_SHOOTING;
-                }
-
-            }
-            case ALGAE_NET_PRESHOOT -> {
-                if (hasAlgae()) {
-                    yield SystemState.ALGAE_NET_PRESHOOTING;
-                } else {
-                    yield SystemState.HOLDING;
-                }
-            }
-            case ALGAE_PROCESSOR_SHOOT -> {
-                if (hasAlgae()) {
-                    yield SystemState.ALGAE_PROCESSOR_SHOOTING;
-                } else {
-                    if (!algaeShootTimerStarted) {
-                        algaeShootTimer.start();
-                        algaeShootTimerStarted = true;
-                        yield SystemState.ALGAE_PROCESSOR_SHOOTING;
-                    } else if (algaeShootTimer.hasElapsed(0.3)) {
-                        algaeShootTimer.stop();
-                        algaeShootTimer.reset();
-                        algaeShootTimerStarted = false;
-                        setWantedState(WantedState.HOLD);
-                        yield SystemState.HOLDING;
-                    } else yield SystemState.ALGAE_PROCESSOR_SHOOTING;
-                }
-
-            }
-            case ALGAE_PROCESSOR_PRESHOOT -> {
-                if (hasAlgae()) {
-                    yield SystemState.ALGAE_PROCESSOR_PRESHOOTING;
-                } else {
-                    yield SystemState.HOLDING;
-                }
-            }
-        };
-    }
-
-    /**
      * Checks if the arm is near a target angle
      *
      * @param targetAngleDeg The target angle in degrees
@@ -395,12 +134,10 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
      */
     public boolean isNearAngle(double targetAngleDeg) {
         return MathUtil.isNear(targetAngleDeg, armPivotIOInputs.currentAngleDeg, 5);
-        //TODO：isNear angle value
     }
 
     public boolean isNearAngle(double targetAngleDeg, double tolerance) {
         return MathUtil.isNear(targetAngleDeg, armPivotIOInputs.currentAngleDeg, tolerance);
-        //TODO：isNear angle value
     }
 
     /**
@@ -430,52 +167,20 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
         return !hasCoral() && !hasAlgae();
     }
 
-    /**
-     * Checks if is ready to shoot, i.e. angle is ready and has a coral
-     *
-     * @return True if both angle is near the preshoot angle and contains a coral
-     */
-    public boolean isShootReady() {
-        if (DestinationSupplier.getInstance().getCurrentElevSetpointCoral() == DestinationSupplier.elevatorSetpoint.L1) {
-            return isNearAngle(coralPreShootAngleL1);
-        } else if(DestinationSupplier.getInstance().getCurrentElevSetpointCoral() == DestinationSupplier.elevatorSetpoint.L4){
-            return isNearAngle(coralPreShootAngleL4);
-        } else {
-            return isNearAngle(coralPreShootAngle);
-        }
+    // Basic control methods
+    public void setPivotAngle(DoubleSupplier angleDeg) {
+        wantedAngle = angleDeg.getAsDouble();
     }
 
-    /**
-     * The wanted state for the EndEffectorArm subsystem
-     */
-    public enum WantedState {
-        CORAL_INTAKE,
-        CORAL_OUTTAKE,
-        CORAL_PRESHOOT,
-        CORAL_SHOOT,
-        ALGAE_INTAKE,
-        ALGAE_NET_PRESHOOT,
-        ALGAE_NET_SHOOT,
-        ALGAE_PROCESSOR_PRESHOOT,
-        ALGAE_PROCESSOR_SHOOT,
-        HOLD,
-        NEUTRAL
+    public void setRollerVoltage(DoubleSupplier voltage) {
+        rollerIO.setVoltage(voltage.getAsDouble());
     }
 
-    /**
-     * The current system state of the EndEffectorArm subsystem
-     */
-    public enum SystemState {
-        CORAL_INTAKING,
-        CORAL_OUTTAKING,
-        CORAL_PRESHOOTING,
-        CORAL_SHOOTING,
-        ALGAE_INTAKING,
-        ALGAE_NET_PRESHOOTING,
-        ALGAE_NET_SHOOTING,
-        ALGAE_PROCESSOR_PRESHOOTING,
-        ALGAE_PROCESSOR_SHOOTING,
-        HOLDING,
-        NEUTRAL
+    public void stopRoller() {
+        rollerIO.stop();
+    }
+
+    public double getCurrentAngle() {
+        return armPivotIOInputs.currentAngleDeg;
     }
 } 

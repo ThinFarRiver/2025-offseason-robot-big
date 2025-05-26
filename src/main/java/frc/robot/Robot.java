@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.swerve.Swerve;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -79,7 +80,8 @@ public class Robot extends LoggedRobot {
     @Override
     public void autonomousInit() {
         try {
-            autonomousCommand = robotContainer.getAutonomousCommand();
+            //todo add autonomous command
+            autonomousCommand = Commands.none();
         } catch (Exception e) {
             System.out.println("Autonomous command failed: " + e);
             e.printStackTrace();

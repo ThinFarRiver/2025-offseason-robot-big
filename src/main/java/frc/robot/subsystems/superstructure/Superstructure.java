@@ -17,6 +17,7 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 import java.util.*;
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 public class Superstructure extends SubsystemBase {
@@ -28,6 +29,12 @@ public class Superstructure extends SubsystemBase {
     private SuperstructureState next = null;
     @Getter private SuperstructureState goal = SuperstructureState.START;
     private EdgeCommand edgeCommand;
+    private final IntakeSubsystem intake;
+    private final EndEffectorArmSubsystem endEffectorArm;
+    private final ElevatorSubsystem elevator;
+    private final SuperstructureVisualizer currentPoseVisualizer;
+    private final SuperstructureVisualizer setpointPoseVisualizer;
+    private final SuperstructureVisualizer goalPoseVisualizer;
 
     /**
      * Constructor for the Superstructure subsystem.
@@ -42,8 +49,13 @@ public class Superstructure extends SubsystemBase {
      * @see #getEdgeCommand(SuperstructureState, SuperstructureState)
      * @see EdgeCommand
      */
-    public Superstructure() {
-
+    public Superstructure(IntakeSubsystem intake, EndEffectorArmSubsystem endEffectorArm, ElevatorSubsystem elevator) {
+        this.intake = intake;
+        this.endEffectorArm = endEffectorArm;
+        this.elevator = elevator;
+        this.currentPoseVisualizer = new SuperstructureVisualizer("Current");
+        this.setpointPoseVisualizer = new SuperstructureVisualizer("Setpoint");
+        this.goalPoseVisualizer = new SuperstructureVisualizer("Goal");
 
         // Add states as vertices
         for (var state : SuperstructureState.values()) {
@@ -51,9 +63,6 @@ public class Superstructure extends SubsystemBase {
         }
 
         // Declear all edges here
-
-
-
         addEdge(SuperstructureState.START, SuperstructureState.IDLE, false, false);
         // Add edges between shoot and preshoot states
         final Set<Pair<SuperstructureState, SuperstructureState>> shootStates =
@@ -106,13 +115,31 @@ public class Superstructure extends SubsystemBase {
             addEdge(from, SuperstructureState.AVOID, true, false);
         }
 
-        setDefaultCommand(Commands.none());
+        setDefaultCommand(runGoal(() -> SuperstructureState.IDLE));
     }
 
     @Override
     public void periodic() {
         // Run periodic
-   
+        intake.periodic();
+        endEffectorArm.periodic();
+        elevator.periodic();
+
+        currentPoseVisualizer.update(
+            elevator.getElevatorPosition(),
+            intake.getCurrentAngle(), 
+            endEffectorArm.getCurrentAngle()
+        );
+        setpointPoseVisualizer.update(
+            elevator.getWantedPosition(),
+            intake.getWantedAngle(), 
+            endEffectorArm.getWantedAngle()
+        );
+        goalPoseVisualizer.update(
+            goal.getValue().getPose().elevatorHeight().getAsDouble(),
+            goal.getValue().getPose().intakeAngle().getAsDouble(),
+            goal.getValue().getPose().endEffectorAngle().getAsDouble()
+        );
         if (edgeCommand == null || !edgeCommand.getCommand().isScheduled()) {
             // Update edge to new state
             if (next != null) {
@@ -298,15 +325,7 @@ public class Superstructure extends SubsystemBase {
         addEdge(from, to, false);
     }
 
-    //declare all edge commands here
-    private Command getEdgeCommand(SuperstructureState from, SuperstructureState to) {
-        if (from == SuperstructureState.CORAL_GROUND_INTAKE && to == SuperstructureState.L3) {
-            return Commands.sequence(
-                Commands.waitSeconds(1)
-            );
-        }
-        return Commands.none();
-    }
+
 
     /** All edge commands should finish and exit properly. */
     @Builder(toBuilder = true)
@@ -314,5 +333,40 @@ public class Superstructure extends SubsystemBase {
     public static class EdgeCommand extends DefaultEdge {
       private final Command command;
       @Builder.Default private final boolean restricted = false;
+    }
+
+    private Command runIntake(DoubleSupplier pivotAngle) {
+        return Commands.runOnce(() ->intake.setPivotAngle(pivotAngle));
+    }
+
+    private Command runEndEffectorArm(DoubleSupplier pivotAngle) {
+        return Commands.runOnce(() ->endEffectorArm.setPivotAngle(pivotAngle));
+    }
+
+    private Command runElevator(DoubleSupplier position) {
+        return Commands.runOnce(() ->elevator.setElevatorPosition(position));
+    }
+    
+      /** Runs elevator and pivot to {@link SuperstructurePose} pose. Ends immediately. */
+    private Command runSuperstructurePose(SuperstructurePose pose) {
+        return runElevator(pose.elevatorHeight())
+            .alongWith(runEndEffectorArm(pose.endEffectorAngle())
+            .alongWith(runIntake(pose.intakeAngle())));
+    }
+    private boolean poseAtGoal(){
+        return elevator.isAtGoal() && endEffectorArm.isAtGoal() && intake.isAtGoal();
+    }
+    private Command runSuperstructureRollers(SuperstructureState state){
+        return Commands.runOnce(() ->{
+            endEffectorArm.setRollerVoltage(state.getValue().getEndEffectorVolts());
+            intake.setRollerVoltage(state.getValue().getIntakeVolts());
+        });
+    }
+
+    //declare all edge commands here
+    private Command getEdgeCommand(SuperstructureState from, SuperstructureState to) {
+        return runSuperstructurePose(to.getValue().getPose())
+            .alongWith(runSuperstructureRollers(to))
+            .andThen(Commands.waitUntil(this::poseAtGoal));
     }
 } 

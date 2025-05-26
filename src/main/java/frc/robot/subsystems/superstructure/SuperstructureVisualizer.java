@@ -5,8 +5,6 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 
-import static frc.robot.RobotContainer.intakeHasCoral;
-
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
@@ -14,9 +12,11 @@ import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 import frc.robot.subsystems.swerve.Swerve;
 
+//todo: change LOG CORALPOSE to fit superstructure
+
 public class SuperstructureVisualizer {
-        //todo: change the mechenism location to fit the real robot
-    private static SuperstructureVisualizer instance;
+    
+    private final String name;
 
     // Conversion helper
     private static double mmToM(double mm) {
@@ -73,14 +73,8 @@ public class SuperstructureVisualizer {
     private static final double CORAL_DIAMETER = mmToM(100); // Adjust this value based on actual coral size
 
 
-    public static SuperstructureVisualizer getInstance() {
-        if (instance == null) {
-            instance = new SuperstructureVisualizer();
-        }
-        return instance;
-    }
-
-    public SuperstructureVisualizer() {
+    public SuperstructureVisualizer(String name) {
+        this.name = name;
         // Elevator mechanism setup
         elevatorMechanism = new LoggedMechanism2d(
                 0,
@@ -88,40 +82,40 @@ public class SuperstructureVisualizer {
                 new Color8Bit(Color.kWhite));
 
         LoggedMechanismRoot2d elevatorRoot = elevatorMechanism.getRoot(
-                "ElevatorBase",
+                name + "ElevatorBase",
                 ELEVATOR_CENTER.getX(),
                 ELEVATOR_CENTER.getZ());
 
         elevatorHeight = new LoggedMechanismLigament2d(
-                "stage1",
+                name + "stage1",
                 STAGE1_RETRACT_LENGTH,
                 90,
                 10,
                 new Color8Bit(Color.kBlue));
 
         elevatorStage3 = new LoggedMechanismLigament2d(
-                "elevatorStage3",
+                name + "elevatorStage3",
                 STAGE3_LENGTH,
                 0,
                 8,
                 new Color8Bit(Color.kBlue));
 
         endEffectorMountArm = new LoggedMechanismLigament2d(
-                "endEffectorMountArm",
+                name + "endEffectorMountArm",
                 END_EFFECTOR_MOUNT_ARM_LENGTH,
                 0,
                 8,
                 new Color8Bit(Color.kPurple));
 
             endEffectorArmCoral = new LoggedMechanismLigament2d(
-                "endEffectorArmCoral",
+                name + "endEffectorArmCoral",
                 END_EFFECTOR_LENGTH_CORAL,
                 90,
                 8,
                 new Color8Bit(Color.kGreen));
 
         endEffectorArmAlgae = new LoggedMechanismLigament2d(
-                "endEffectorArmAlgae",
+                name + "endEffectorArmAlgae",
                 END_EFFECTOR_LENGTH_ALGAE,
                 270,
                 8,
@@ -140,12 +134,12 @@ public class SuperstructureVisualizer {
                 new Color8Bit(Color.kWhite));
 
         LoggedMechanismRoot2d intakeRoot = intakeMechanism.getRoot(
-                "IntakePivot",
+                name + "IntakePivotBase",
                 0.25,
                 INTAKE_CENTER.getZ());
 
         intakeArm = new LoggedMechanismLigament2d(
-                "intakeArm",
+                name + "intakeArm",
                 INTAKE_LENGTH,
                 90,
                 8,
@@ -259,11 +253,8 @@ public class SuperstructureVisualizer {
         // Update end effector components
         endEffectorMountArm.setAngle(Rotation2d.fromRadians(Math.toRadians(currentEndEffectorAngleDeg+180)));
 
-        // Log Coral pose 3D
-        logCoralPose3D();
-
         // Log 2D mechanisms
-        Logger.recordOutput("Superstructure/Visualizer/Elevator/Mechanism2d", elevatorMechanism);
-        Logger.recordOutput("Superstructure/Visualizer/Intake/Mechanism2d", intakeMechanism);
+        Logger.recordOutput("Superstructure/Visualizer/" + name + "/Elevator/Mechanism2d", elevatorMechanism);
+        Logger.recordOutput("Superstructure/Visualizer/" + name + "/Intake/Mechanism2d", intakeMechanism);
     }
 }

@@ -11,25 +11,15 @@ import static frc.robot.RobotConstants.ElevatorConstants.HOLD_EXTENSION_METERS;
 
 public class IdleClimbCommand extends Command {
     private final ClimberSubsystem climberSubsystem;
-    private final ElevatorSubsystem elevatorSubsystem;
-    private final IntakeSubsystem intakeSubsystem;
-    private final EndEffectorArmSubsystem endEffectorArmSubsystem;
 
-    public IdleClimbCommand(ClimberSubsystem climberSubsystem, ElevatorSubsystem elevatorSubsystem,
-                            IntakeSubsystem intakeSubsystem, EndEffectorArmSubsystem endEffectorArmSubsystem) {
+    public IdleClimbCommand(ClimberSubsystem climberSubsystem) {
         this.climberSubsystem = climberSubsystem;
-        this.elevatorSubsystem = elevatorSubsystem;
-        this.endEffectorArmSubsystem = endEffectorArmSubsystem;
-        this.intakeSubsystem = intakeSubsystem;
-        addRequirements(climberSubsystem, elevatorSubsystem, endEffectorArmSubsystem, intakeSubsystem);
+        addRequirements(climberSubsystem);
     }
 
     @Override
     public void initialize() {
-        elevatorSubsystem.setElevatorPosition(HOLD_EXTENSION_METERS.get());
         climberSubsystem.setWantedState(WantedState.IDLE);
-        intakeSubsystem.setWantedState(IntakeSubsystem.WantedState.HOME);
-        endEffectorArmSubsystem.setWantedState(EndEffectorArmSubsystem.WantedState.NEUTRAL);
     }
 
     @Override
