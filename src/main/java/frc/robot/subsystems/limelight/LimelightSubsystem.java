@@ -7,6 +7,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotConstants;
 import frc.robot.subsystems.limelight.LimelightIO.PoseEstimate;
 import frc.robot.subsystems.swerve.Swerve;
+import frc.robot.utils.LoggedTracer;
+
 import org.frcteam6941.localization.Localizer;
 import org.littletonrobotics.junction.Logger;
 
@@ -133,6 +135,7 @@ public class LimelightSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         addVisionMeasurement();
+        LoggedTracer.record("Limelight");
     }
 }
 

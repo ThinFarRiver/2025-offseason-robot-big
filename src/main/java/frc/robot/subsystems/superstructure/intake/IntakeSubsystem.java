@@ -8,6 +8,7 @@ import frc.robot.RobotConstants;
 import frc.robot.subsystems.beambreak.BeambreakIO;
 import frc.robot.subsystems.beambreak.BeambreakIOInputsAutoLogged;
 import frc.robot.subsystems.superstructure.intake.IntakePivotIOInputsAutoLogged;
+import frc.robot.utils.LoggedTracer;
 import frc.robot.subsystems.roller.RollerIO;
 import frc.robot.subsystems.roller.RollerIOInputsAutoLogged;
 import frc.robot.subsystems.roller.RollerSubsystem;
@@ -64,6 +65,7 @@ public class IntakeSubsystem extends RollerSubsystem {
         if (RobotBase.isReal()) {
             GamepieceTracker.getInstance().setintakeHasCoral(BBInputs.isBeambreakOn);
         }
+        LoggedTracer.record("Intake");
     }
 
     /**

@@ -64,7 +64,9 @@ public class Robot extends LoggedRobot {
     public void robotPeriodic() {
         LoggedTracer.reset();
         CommandScheduler.getInstance().run();
+        LoggedTracer.record("Commands");
         robotContainer.getUpdateManager().runEnableSingle();
+        LoggedTracer.record("RobotPeriodic");
     }
 
     @Override

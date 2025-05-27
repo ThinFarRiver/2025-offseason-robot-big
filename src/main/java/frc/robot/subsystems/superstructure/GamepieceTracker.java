@@ -5,6 +5,7 @@ import lombok.Getter;
 import org.frcteam6941.looper.Updatable;
 
 public class GamepieceTracker implements Updatable {
+    //Todo: Consider moving this class to superstructure
     public static GamepieceTracker instance;
     //Current Gamepiece tracking
     @Getter

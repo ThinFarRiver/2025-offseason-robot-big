@@ -2,6 +2,7 @@ package frc.robot.subsystems.indicator;
 
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.utils.LoggedTracer;
 import lombok.Getter;
 import org.littletonrobotics.junction.Logger;
 
@@ -41,6 +42,7 @@ public class IndicatorSubsystem extends SubsystemBase {
         }
         io.updateInputs(inputs);
         Logger.processInputs("Indicator", inputs);
+        LoggedTracer.record("Indicator");
     }
 
     private void resetLed() {

@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.superstructure.SuperstructurePose;
 import frc.robot.subsystems.superstructure.elevator.ElevatorIOInputsAutoLogged;
+import frc.robot.utils.LoggedTracer;
 import lombok.Getter;
 
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -54,6 +55,7 @@ public class ElevatorSubsystem extends SubsystemBase {
         }else{
             wantedPosition = 0;
         }
+        LoggedTracer.record("Elevator");
     }
 
 

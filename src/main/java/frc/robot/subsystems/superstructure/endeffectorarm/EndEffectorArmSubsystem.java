@@ -27,6 +27,7 @@ import frc.robot.subsystems.roller.RollerIOInputsAutoLogged;
 import frc.robot.subsystems.superstructure.DestinationSupplier;
 import frc.robot.subsystems.superstructure.GamepieceTracker;
 import frc.robot.subsystems.superstructure.SuperstructureVisualizer;
+import frc.robot.utils.LoggedTracer;
 import frc.robot.utils.TimeDelayedBoolean;
 import lombok.Getter;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -119,6 +120,7 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
                 END_EFFECTOR_ARM_ROLLER_KS.get()
             );
         }
+        LoggedTracer.record("EndEffectorArm");
     }
 
     /**
