@@ -199,7 +199,7 @@ public class RobotContainer {
 
         // Initialize the update manager
         updateManager = new UpdateManager(swerve,
-                display, destinationSupplier);
+                display);
         updateManager.registerAll();
 
         //autoChooser = new LoggedDashboardChooser<>("Chooser", CustomAutoChooser.buildAutoChooser("New Auto"));

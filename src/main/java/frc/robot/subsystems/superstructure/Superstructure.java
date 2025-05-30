@@ -448,7 +448,6 @@ public class Superstructure extends SubsystemBase {
             }
         }
         return runSuperstructurePose(to.getValue().getPose())
-            .alongWith(runSuperstructureRollers(to))
-            .andThen(Commands.waitUntil(this::poseAtGoal));
+            .andThen(Commands.waitUntil(this::poseAtGoal).andThen(runSuperstructureRollers(to)));
     }
 } 

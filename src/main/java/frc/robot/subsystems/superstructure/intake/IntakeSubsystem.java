@@ -56,7 +56,6 @@ public class IntakeSubsystem extends RollerSubsystem {
 
     @Override
     public void periodic() {
-        super.periodic();
 
         BBIO.updateInputs(BBInputs);
         intakePivotIO.updateInputs(intakePivotIOInputs);

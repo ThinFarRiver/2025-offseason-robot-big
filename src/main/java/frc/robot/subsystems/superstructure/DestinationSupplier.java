@@ -13,13 +13,12 @@ import frc.robot.RobotConstants;
 import frc.robot.subsystems.swerve.Swerve;
 import lombok.Getter;
 import lombok.Setter;
-import org.frcteam6941.looper.Updatable;
 import org.littletonrobotics.AllianceFlipUtil;
 import org.littletonrobotics.junction.Logger;
 
 import java.util.List;
 
-public class DestinationSupplier implements Updatable {
+public class DestinationSupplier {
     private static DestinationSupplier instance;
     @Getter
     @Setter
