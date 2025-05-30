@@ -53,14 +53,4 @@ public class AutoActions {
     public Command setLevel(DestinationSupplier.elevatorSetpoint setpoint) {
         return Commands.runOnce(() -> destinationSupplier.updateElevatorSetpoint(setpoint));
     }
-
-    public boolean intakerHasCoral() {
-        return intakeSubsystem.hasCoral();
-    }
-
-
-    public boolean isIntakeFinished() {
-        return endEffectorArmSubsystem.hasCoral();
-    }
-
 }

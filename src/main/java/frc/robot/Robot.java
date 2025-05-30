@@ -85,7 +85,7 @@ public class Robot extends LoggedRobot {
     @Override
     public void autonomousInit() {
         try {
-            //todo add autonomous command
+            //todo: add autonomous command
             autonomousCommand = Commands.none();
         } catch (Exception e) {
             System.out.println("Autonomous command failed: " + e);

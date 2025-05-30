@@ -12,7 +12,6 @@ import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 import frc.robot.subsystems.swerve.Swerve;
 
-//todo: change LOG CORALPOSE to fit superstructure
 
 public class SuperstructureVisualizer {
     
@@ -177,12 +176,9 @@ public class SuperstructureVisualizer {
     /**
      * Logs the Coral pose 3D if coral is detected in the intake
      */
-    private void logCoralPose3D() {
-        // Get the GamepieceTracker instance
-
-        
+    public void logCoralPose3D(boolean isIntakeHasCoral, boolean isEndeffectorHasCoral, boolean isEndeffectorHasAlgae) {
         // Check if coral is detected in the intake
-        if (GamepieceTracker.getInstance().isIntakeHasCoral()) {
+        if (isIntakeHasCoral) {
         Pose3d robotPose = new Pose3d(Swerve.getInstance().getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp()));
             // Calculate the position of the coral at the middle of the intake arm
             // The coral is positioned at the end of the intake arm
@@ -201,7 +197,7 @@ public class SuperstructureVisualizer {
             // If no coral is detected, log an empty pose
             Logger.recordOutput("Superstructure/Visualizer/Gamepiece/IntakeCoral", new Pose3d());
         }
-        if (GamepieceTracker.getInstance().isEndeffectorHasCoral()) {
+        if (isEndeffectorHasCoral) {
             Pose3d robotPose = new Pose3d(Swerve.getInstance().getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp()));
             
             // Calculate the position of the coral at the middle of the end effector arm coral
@@ -221,7 +217,7 @@ public class SuperstructureVisualizer {
         } else {
             Logger.recordOutput("Superstructure/Visualizer/Gamepiece/EECoral", new Pose3d());
         }
-        if (GamepieceTracker.getInstance().isEndeffectorHasAlgae()) {
+        if (isEndeffectorHasAlgae) {
                 Pose3d robotPose = new Pose3d(Swerve.getInstance().getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp()));
                 
                 // Calculate the position of the coral at the middle of the end effector arm coral

@@ -34,7 +34,6 @@ import frc.robot.subsystems.limelight.LimelightIOReal;
 import frc.robot.subsystems.limelight.LimelightIOReplay;
 import frc.robot.subsystems.limelight.LimelightSubsystem;
 import frc.robot.subsystems.superstructure.DestinationSupplier;
-import frc.robot.subsystems.superstructure.GamepieceTracker;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.SuperstructureState;
 import frc.robot.subsystems.superstructure.elevator.ElevatorIO;
@@ -64,13 +63,6 @@ import static frc.robot.RobotConstants.LimelightConstants.LIMELIGHT_RIGHT;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
-
-
-    // Flag states
-    public static boolean elevatorIsDanger;
-    public static boolean intakeHasCoral = false;
-    public static boolean endeffectorIsDanger = false;
-    public static boolean overrideEndEffectorDanger = false;
 
     // Controllers
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -376,7 +368,7 @@ public class RobotContainer {
     //                     ),
     //                     // Elevator Coral
     //                     new PutCoralCommand(driverController, endEffectorArmSubsystem, elevatorSubsystem, intakeSubsystem, indicatorSubsystem),
-    //                     () -> !GamepieceTracker.getInstance().isEndeffectorHasCoral()
+    //                     () -> !endEffectorArmSubsystem.hasCoral()
     //             ),
     //             () -> destinationSupplier.getL1Mode() == DestinationSupplier.L1Mode.INTAKE);
     // }

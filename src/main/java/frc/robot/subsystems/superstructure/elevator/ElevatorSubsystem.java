@@ -14,7 +14,6 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 import static frc.robot.RobotConstants.ElevatorConstants;
-import static frc.robot.RobotContainer.elevatorIsDanger;
 
 import java.util.function.DoubleSupplier;
 
@@ -39,13 +38,11 @@ public class ElevatorSubsystem extends SubsystemBase {
         this.io = io;
     }
 
-    //TODO:Add check Limit，add
+    //TODO:Add check Limit
     @Override
     public void periodic() {
         io.updateInputs(inputs);
         Logger.processInputs("Elevator", inputs);
-        //TODO: Delete
-        elevatorIsDanger = elevatorIsDanger();
         final boolean runningGoal = 
             !stopProfile &&
             !zeroing;
@@ -71,7 +68,7 @@ public class ElevatorSubsystem extends SubsystemBase {
         return Math.abs(inputs.positionMeters - wantedPosition) < offset;
     }
 
-    //TODO: Change to a command
+    //TODO: UNTESTED AND UNFINISHED
     public Command zeroElevator() {
         return Commands.startRun(
             () -> {

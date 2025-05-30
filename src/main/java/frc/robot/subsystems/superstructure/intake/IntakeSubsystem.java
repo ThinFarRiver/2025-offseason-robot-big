@@ -4,6 +4,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.RobotConstants;
 import frc.robot.subsystems.beambreak.BeambreakIO;
 import frc.robot.subsystems.beambreak.BeambreakIOInputsAutoLogged;
@@ -12,7 +13,6 @@ import frc.robot.utils.LoggedTracer;
 import frc.robot.subsystems.roller.RollerIO;
 import frc.robot.subsystems.roller.RollerIOInputsAutoLogged;
 import frc.robot.subsystems.roller.RollerSubsystem;
-import frc.robot.subsystems.superstructure.GamepieceTracker;
 import frc.robot.subsystems.superstructure.SuperstructureVisualizer;
 
 import java.util.function.DoubleSupplier;
@@ -20,6 +20,7 @@ import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import lombok.Getter;
+import lombok.Setter;
 
 public class IntakeSubsystem extends RollerSubsystem {
     private final IntakePivotIO intakePivotIO;
@@ -36,6 +37,11 @@ public class IntakeSubsystem extends RollerSubsystem {
     @Getter
     @AutoLogOutput(key = "Intake/atGoal")
     private boolean atGoal = false;
+
+    @Getter
+    @Setter
+    @AutoLogOutput(key = "Intake/hasCoral")
+    private boolean hasCoral = false;
 
     public IntakeSubsystem(
             IntakePivotIO intakePivotIO,
@@ -62,8 +68,10 @@ public class IntakeSubsystem extends RollerSubsystem {
         atGoal = isNearAngle(wantedAngle);
         intakePivotIO.setPivotAngle(wantedAngle);
 
+        //TODO: add Debouncer or filter to prevent false positives
         if (RobotBase.isReal()) {
-            GamepieceTracker.getInstance().setintakeHasCoral(BBInputs.isBeambreakOn);
+            hasCoral = BBInputs.isBeambreakOn;
+            SmartDashboard.putBoolean("GamePiece/IntakeHasCoral", hasCoral);
         }
         LoggedTracer.record("Intake");
     }
@@ -76,15 +84,6 @@ public class IntakeSubsystem extends RollerSubsystem {
      */
     public boolean isNearAngle(double targetAngleDeg) {
         return MathUtil.isNear(targetAngleDeg, intakePivotIOInputs.currentAngleDeg, 1.0);
-    }
-
-    /**
-     * Checks if the mechanism has coral
-     *
-     * @return True if coral is detected by the beambreak
-     */
-    public boolean hasCoral() {
-        return GamepieceTracker.getInstance().isIntakeHasCoral();
     }
 
     /**

@@ -25,13 +25,15 @@ import frc.robot.subsystems.superstructure.endeffectorarm.EndEffectorArmPivotIOI
 import frc.robot.subsystems.roller.RollerIO;    
 import frc.robot.subsystems.roller.RollerIOInputsAutoLogged;
 import frc.robot.subsystems.superstructure.DestinationSupplier;
-import frc.robot.subsystems.superstructure.GamepieceTracker;
 import frc.robot.subsystems.superstructure.SuperstructureVisualizer;
 import frc.robot.utils.LoggedTracer;
 import frc.robot.utils.TimeDelayedBoolean;
 import lombok.Getter;
+import lombok.Setter;
+
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import static frc.robot.RobotConstants.CANIVORE_CAN_BUS_NAME;
 import static frc.robot.RobotConstants.EndEffectorArmConstants.*;
@@ -59,6 +61,15 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
     private double wantedAngle = 0.0;
     @Getter@AutoLogOutput(key = "EndEffectorArm/atGoal")
     private boolean atGoal = false;
+
+    @Getter
+    @Setter
+    @AutoLogOutput(key = "EndEffectorArm/hasCoral")
+    private boolean hasCoral = false;
+    @Getter
+    @Setter
+    @AutoLogOutput(key = "EndEffectorArm/hasAlgae")
+    private boolean hasAlgae = false;
 
     public EndEffectorArmSubsystem(
             EndEffectorArmPivotIO armPivotIO,
@@ -90,9 +101,12 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
         rollerIO.updateInputs(armRollerIOInputs);
 
         if (RobotBase.isReal()) {
-            // If the robot is real, Update DestinationSupplier with current coral and algae states
-            GamepieceTracker.getInstance().setEndeffectorHasCoral(coralBeambreakInputs.isBeambreakOn);
-            GamepieceTracker.getInstance().setEndeffectorHasAlgae(algaeBeambreakInputs.isBeambreakOn);
+            // Update gamepiece tracking
+            //TODO: add Debouncer or filter to prevent false positives
+            hasCoral = coralBeambreakInputs.isBeambreakOn;
+            hasAlgae = algaeBeambreakInputs.isBeambreakOn;
+            SmartDashboard.putBoolean("GamePiece/EEHasCoral", hasCoral);
+            SmartDashboard.putBoolean("GamePiece/EEHasAlgae", hasAlgae);
         }
 
         // Process and log inputs
@@ -100,9 +114,6 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
         Logger.processInputs(NAME + "/Coral Beambreak", coralBeambreakInputs);
         Logger.processInputs(NAME + "/Algae Beambreak", algaeBeambreakInputs);
         Logger.processInputs(NAME + "/Roller", armRollerIOInputs);
-
-        Logger.recordOutput("Flags/eeIsDanger", RobotContainer.endeffectorIsDanger);
-        Logger.recordOutput("Flags/eeIsDangerOverride", RobotContainer.overrideEndEffectorDanger);
 
         // Update goal status and set pivot angle
         atGoal = isNearAngle(wantedAngle);
@@ -135,33 +146,6 @@ public class EndEffectorArmSubsystem extends SubsystemBase {
 
     public boolean isNearAngle(double targetAngleDeg, double tolerance) {
         return MathUtil.isNear(targetAngleDeg, armPivotIOInputs.currentAngleDeg, tolerance);
-    }
-
-    /**
-     * Checks if the mechanism has coral
-     *
-     * @return True if coral is detected by the beambreak
-     */
-    public boolean hasCoral() {
-        return GamepieceTracker.getInstance().isEndeffectorHasCoral();
-    }
-
-    /**
-     * Checks if the mechanism has algae
-     *
-     * @return True if algae is detected by the beambreak
-     */
-    public boolean hasAlgae() {
-        return GamepieceTracker.getInstance().isEndeffectorHasAlgae();
-    }
-
-    /**
-     * Checks if the shoot is finished
-     *
-     * @return True if neither coral nor algae is detected
-     */
-    public boolean isShootFinished() {
-        return !hasCoral() && !hasAlgae();
     }
 
     // Basic control methods

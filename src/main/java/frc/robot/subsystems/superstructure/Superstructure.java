@@ -2,9 +2,11 @@ package frc.robot.subsystems.superstructure;
 
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.units.measure.Time;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.RobotConstants;
 import frc.robot.subsystems.superstructure.elevator.ElevatorSubsystem;
 import frc.robot.subsystems.superstructure.endeffectorarm.EndEffectorArmSubsystem;
 import frc.robot.subsystems.superstructure.intake.IntakeSubsystem;
@@ -16,6 +18,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
+
 
 import java.util.*;
 import java.util.function.DoubleSupplier;
@@ -36,6 +39,7 @@ public class Superstructure extends SubsystemBase {
     private final SuperstructureVisualizer measuredPoseVisualizer;
     private final SuperstructureVisualizer setpointPoseVisualizer;
     private final SuperstructureVisualizer goalPoseVisualizer;
+    private final Set<Pair<SuperstructureState, SuperstructureState>> shootStates;
 
     /**
      * Constructor for the Superstructure subsystem.
@@ -66,7 +70,7 @@ public class Superstructure extends SubsystemBase {
         // Declear all edges here
         addEdge(SuperstructureState.START, SuperstructureState.IDLE, false, false);
         // Add edges between shoot and preshoot states
-        final Set<Pair<SuperstructureState, SuperstructureState>> shootStates =
+        this.shootStates =
         Set.of(
             Pair.of(SuperstructureState.L1_INTAKE_SIDE, SuperstructureState.L1_INTAKE_SIDE_EJECT),
             Pair.of(SuperstructureState.L1_SHOOT_SIDE, SuperstructureState.L1_SHOOT_SIDE_EJECT),
@@ -146,6 +150,39 @@ public class Superstructure extends SubsystemBase {
         intake.periodic();
         endEffectorArm.periodic();
         elevator.periodic();
+
+        //simulated gamepiece tracking
+        if (!RobotBase.isReal() && !RobotConstants.useReplay) {
+            if (atGoal()&&state == SuperstructureState.CORAL_GROUND_INTAKE){
+                intake.setHasCoral(false);
+                endEffectorArm.setHasCoral(true);
+                endEffectorArm.setHasAlgae(false);
+            }
+            for (var pair : shootStates){
+                if (atGoal()&&state == pair.getSecond()){
+                    intake.setHasCoral(false);
+                    endEffectorArm.setHasCoral(false);
+                    endEffectorArm.setHasAlgae(false);
+                }
+            }
+            if (atGoal()&&(state == SuperstructureState.P1 || state == SuperstructureState.P2)){
+                intake.setHasCoral(false);
+                endEffectorArm.setHasCoral(false);
+                endEffectorArm.setHasAlgae(true);
+            }
+            if (atGoal()&&state == SuperstructureState.NET_SCORE_EJECT){
+                intake.setHasCoral(false);
+                endEffectorArm.setHasCoral(false);
+                endEffectorArm.setHasAlgae(false);
+            }
+        }
+
+        //log the gamepiece tracking
+        measuredPoseVisualizer.logCoralPose3D(
+            intake.isHasCoral(),
+            endEffectorArm.isHasCoral(),
+            endEffectorArm.isHasAlgae()
+        );
 
         measuredPoseVisualizer.update(
             elevator.getElevatorPosition(),
