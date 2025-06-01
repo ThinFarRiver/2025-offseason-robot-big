@@ -278,10 +278,45 @@ public class RobotContainer {
     }
 
     public void configureTesterBindings() {
-        testerController.a().onTrue(Commands.runOnce(() -> oculusSubsystem.resetPose(new Pose2d(0, 0, new Rotation2d(0)),true)).ignoringDisable(true));
-        testerController.b().onTrue(Commands.runOnce(() -> destinationSupplier.updateElevatorSetpoint(DestinationSupplier.elevatorSetpoint.L2)));
-        testerController.rightBumper().onTrue(Commands.runOnce(() -> destinationSupplier.updateElevatorSetpoint(DestinationSupplier.elevatorSetpoint.P2)));
-        // TODO: Implement PutAlgaeProcessorCommand or replace with appropriate command
+        testerController
+            .a()
+            .toggleOnTrue(
+                superstructure
+                    .runZero()
+            );
+
+        testerController
+            .b()
+            .whileTrue(
+                superstructure
+                    .runGoal(() -> SuperstructureState.L4)
+                    .until(testerController.x())
+                    .andThen(
+                        superstructure
+                            .runGoal(() -> SuperstructureState.L4_EJECT)
+                            .until(() -> !superstructure.hasCoral())
+                    )
+            );
+
+        testerController
+            .button(4)
+            .whileTrue(
+                superstructure
+                    .runGoal(() -> SuperstructureState.P1)
+                    .until(superstructure::hasAlgae)
+            );
+        testerController
+            .button(5)
+            .whileTrue(
+                superstructure
+                    .runGoal(() -> SuperstructureState.NET_SCORE)
+                    .until(testerController.button(6))
+                    .andThen(
+                        superstructure
+                            .runGoal(() -> SuperstructureState.NET_SCORE_EJECT)
+                            .until(() -> !superstructure.hasAlgae())
+                    )
+            );
     }
 
     public Command getAutonomousCommand() {
