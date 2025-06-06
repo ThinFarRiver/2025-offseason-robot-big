@@ -75,6 +75,7 @@ public class ElevatorSubsystem extends SubsystemBase {
             },
             () -> {
                 if (RobotBase.isReal()) {
+                    currentFilterValue = currentFilter.calculate(inputs.statorCurrentAmps);
                     if (currentFilterValue <= ElevatorConstants.ELEVATOR_ZEROING_CURRENT.get()) {
                         io.setElevatorVoltage(-1);
                     }
