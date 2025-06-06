@@ -317,11 +317,12 @@ public class RobotContainer {
 
     public void configureTesterBindings() {
         testerController
-            .a()
-            .toggleOnTrue(
-                superstructure
-                    .runZero()
-            );
+                .a()
+                .whileTrue(
+                        superstructure
+                                .runGoal(() -> SuperstructureState.CORAL_GROUND_INTAKE)
+                                .until(superstructure::hasCoral)
+                );
 
         testerController
             .b()

@@ -98,7 +98,7 @@ public class ElevatorSubsystem extends SubsystemBase {
             });
     }
 
-    public boolean elevatorIsDanger() {
-        return (inputs.positionMeters < ElevatorConstants.ELEVATOR_MIN_SAFE_HEIGHT.get() - 0.01);
+    public boolean isSafeToFlip() {
+        return (inputs.positionMeters > ElevatorConstants.ELEVATOR_MIN_SAFE_HEIGHT.get());
     }
 }

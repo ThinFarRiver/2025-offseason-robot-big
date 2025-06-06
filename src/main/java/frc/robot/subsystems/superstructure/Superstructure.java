@@ -466,6 +466,8 @@ public class Superstructure extends SubsystemBase {
 
     //declare all edge commands here
     private Command getEdgeCommand(SuperstructureState from, SuperstructureState to) {
+        //is safe to flip inorder to produce a smoother elevator motion
+        //TODO: Test this 
         if (to == SuperstructureState.AVOID) {
             if (statesBelowFlip.contains(from)) {
                 return runElevator(to.getValue().getPose().elevatorHeight())
@@ -480,7 +482,7 @@ public class Superstructure extends SubsystemBase {
                     .andThen(Commands.waitUntil(endEffectorArm::isAtGoal));
             } else {
                 return runSuperstructurePose(to.getValue().getPose())
-                    .andThen(Commands.waitUntil(elevator::isAtGoal));
+                    .andThen(Commands.waitUntil(elevator::isSafeToFlip));
             }
         }
         return runSuperstructurePose(to.getValue().getPose())
