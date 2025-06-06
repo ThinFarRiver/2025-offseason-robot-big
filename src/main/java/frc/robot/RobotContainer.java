@@ -270,7 +270,45 @@ public class RobotContainer {
         // driverController.povUp().whileTrue(new PreClimbCommand(climberSubsystem, elevatorSubsystem, intakeSubsystem, endEffectorArmSubsystem));
         // driverController.povLeft().whileTrue(new IdleClimbCommand(climberSubsystem, elevatorSubsystem, intakeSubsystem, endEffectorArmSubsystem));
         // driverController.y().whileTrue(new ClimbCommand(climberSubsystem, elevatorSubsystem, intakeSubsystem, endEffectorArmSubsystem));
-        
+
+        driverController
+                .a()
+                .toggleOnTrue(
+                        superstructure
+                                .runZero()
+                );
+
+        driverController
+                .b()
+                .whileTrue(
+                        superstructure
+                                .runGoal(() -> SuperstructureState.L4)
+                                .until(driverController.x())
+                                .andThen(
+                                        superstructure
+                                                .runGoal(() -> SuperstructureState.L4_EJECT)
+                                                .until(() -> !superstructure.hasCoral())
+                                )
+                );
+        driverController
+                .y()
+                .whileTrue(
+                        superstructure
+                                .runGoal(() -> SuperstructureState.L2)
+                                .until(driverController.x())
+                                .andThen(
+                                        superstructure
+                                                .runGoal(() -> SuperstructureState.L2_EJECT)
+                                                .until(() -> !superstructure.hasCoral())
+                                )
+                );
+        driverController
+                .leftBumper()
+                .whileTrue(
+                        superstructure
+                                .runGoal(() -> SuperstructureState.CORAL_GROUND_INTAKE)
+                                .until(superstructure::hasCoral)
+                );
     }
 
     private void configureStreamDeckBindings() {

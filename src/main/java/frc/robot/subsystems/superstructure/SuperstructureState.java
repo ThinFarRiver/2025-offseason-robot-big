@@ -43,6 +43,7 @@ public enum SuperstructureState {
     private final SuperstructureStateData value;
 
     // Helper methods to create states
+    //TODO clean up helper states
     private static SuperstructureStateData createState(Preset preset) {
         return SuperstructureStateData.builder()
             .pose(preset.getPose())
@@ -66,6 +67,7 @@ public enum SuperstructureState {
         return SuperstructureStateData.builder()
             .pose(preset.getPose())
             .intakeVolts(() -> IntakeConstants.INTAKE_VOLTAGE.get())
+            .endEffectorVolts(() -> EndEffectorArmConstants.CORAL_INTAKE_VOLTAGE.get())
             .build();
     }
 
