@@ -106,11 +106,6 @@ public class ReefAimCommand extends Command {
         translationalVelocity = AllianceFlipUtil.shouldFlip() ?
                 new Translation2d(-xPID.calculate(robotPose.getX()), -yPID.calculate(robotPose.getY())) :
                 new Translation2d(xPID.calculate(robotPose.getX()), yPID.calculate(robotPose.getY()));
-        controllerVelocity = new Translation2d(
-                Math.abs(driverController.getLeftY()) < RobotConstants.SwerveConstants.deadband ?
-                        0 : -driverController.getLeftY() * RobotConstants.SwerveConstants.maxSpeed.magnitude(),
-                Math.abs(driverController.getLeftX()) < RobotConstants.SwerveConstants.deadband ?
-                        0 : -driverController.getLeftX() * RobotConstants.SwerveConstants.maxSpeed.magnitude());
         swerve.drive(translationalVelocity, 0.0, true, false);
         Display.getInstance().setAimingTarget(destinationPose);
         Logger.recordOutput("ReefAimCommand/tagPose", tagPose);

@@ -120,7 +120,7 @@ public class AimGoalSupplier {
         return minDistanceID;
     }
 
-    private static int solveEdgeCase(double controllerX, double controllerY, int minDistanceID, int secondMinDistanceID) {
+    public static int solveEdgeCase(double controllerX, double controllerY, int minDistanceID, int secondMinDistanceID) {
         List<TagCondition> conditions = AllianceFlipUtil.shouldFlip() ?
                 List.of(
                         new TagCondition(6, 11, 'Y', 6, 11),
@@ -150,5 +150,48 @@ public class AimGoalSupplier {
 
     private static boolean correctTagPair(double tag1, double tag2, double wantedTag1, double wantedTag2) {
         return (tag1 == wantedTag1 && tag2 == wantedTag2) || (tag1 == wantedTag2 && tag2 == wantedTag1);
+    }
+
+    /**
+     * Checks if the robot is in an edge case situation between two tags and logs relevant information
+     *
+     * @param robotPose Current pose of the robot
+     */
+    public static void isEdgeCase(Pose2d robotPose) {
+        XboxController driverController = new XboxController(0);
+        double ControllerX = driverController.getLeftX();
+        double ControllerY = driverController.getLeftY();
+        double minDistance = Double.MAX_VALUE;
+        double secondMinDistance = Double.MAX_VALUE;
+        int ReefTagMin = AllianceFlipUtil.shouldFlip() ? 6 : 17;
+        int ReefTagMax = AllianceFlipUtil.shouldFlip() ? 11 : 22;
+        int minDistanceID = ReefTagMin;
+        int secondMinDistanceID = ReefTagMin;
+        for (int i = ReefTagMin; i <= ReefTagMax; i++) {
+            double distance = FieldConstants.officialAprilTagType.getLayout().getTagPose(i).get().
+                    toPose2d().getTranslation().getDistance(robotPose.getTranslation());
+            if (distance < secondMinDistance) {
+                secondMinDistanceID = i;
+                secondMinDistance = distance;
+            }
+            if (distance < minDistance) {
+                secondMinDistanceID = minDistanceID;
+                secondMinDistance = minDistance;
+                minDistanceID = i;
+                minDistance = distance;
+            }
+        }
+        Logger.recordOutput("EdgeCase/DeltaDistance", secondMinDistance - minDistance);
+        Logger.recordOutput("EdgeCase/ControllerX", ControllerX);
+        Logger.recordOutput("EdgeCase/ControllerY", ControllerY);
+        if ((secondMinDistance - minDistance) < RobotConstants.ReefAimConstants.Edge_Case_Max_Delta.get()) {
+            Logger.recordOutput("EdgeCase/IsEdgeCase", true);
+            if (Math.abs(ControllerX) >= 0.05 || Math.abs(ControllerY) >= 0.05) {
+                minDistanceID = solveEdgeCase(ControllerX, ControllerY, minDistanceID, secondMinDistanceID);
+            }
+        } else {
+            Logger.recordOutput("EdgeCase/IsEdgeCase", false);
+        }
+        Logger.recordOutput("EdgeCase/TargetChanged", minDistanceID == secondMinDistanceID);
     }
 } 
