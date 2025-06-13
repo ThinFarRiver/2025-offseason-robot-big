@@ -41,7 +41,7 @@ public class EndEffectorArmPivotIOReal implements EndEffectorArmPivotIO {
 
         //initialize CANcoder
         CANcoderConfiguration CANconfig = new CANcoderConfiguration();
-        CANconfig.MagnetSensor.MagnetOffset = END_EFFECTOR_ARM_ENCODER_OFFSET;
+        CANconfig.MagnetSensor.MagnetOffset = END_EFFECTOR_ARM_ENCODER_OFFSET.get();
         CANconfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
         CANcoder.getConfigurator().apply(CANconfig);
         //integrate with fused encoder
