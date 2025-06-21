@@ -360,13 +360,7 @@ public class RobotContainer {
         driverController
                 .leftBumper()
                 .whileTrue(
-                        Commands.defer(() -> {
-                            if (superstructure.hasCoral()) {
-                                return createScoringCommand(false, SuperstructureState.L4);
-                            } else {
-                                return superstructure.runGoal(() -> SuperstructureState.CORAL_GROUND_INTAKE);
-                            }
-                        }, Set.of())
+                        createScoringCommand(false, SuperstructureState.L4)
                 );
         driverController
                 .leftTrigger()
@@ -415,21 +409,14 @@ public class RobotContainer {
                 .button(1)
                 .onTrue(
                         Commands.runOnce(
-                                () -> DestinationSupplier
-                                        .getInstance()
-                                        .setStateSetPoint(SuperstructureState.L4)
+                                () -> oculusSubsystem.resetPose(
+                                        swerve.getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp()), 
+                                        true
+                                )
                         )
                 );
 
-        streamDeckController
-                .button(2)
-                .onTrue(
-                        Commands.runOnce(
-                                () -> DestinationSupplier
-                                        .getInstance()
-                                        .setStateSetPoint(SuperstructureState.L3)
-                        )
-                );
+
     }
 
     public void configureTesterBindings() {

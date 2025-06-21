@@ -86,7 +86,7 @@ public class OculusSubsystem extends SubsystemBase {
     Logger.processInputs("Oculus", inputs);
 
     // Add to Kalman filter
-    processPose();
+    //processPose();
     LoggedTracer.record("Oculus");
   }
 
