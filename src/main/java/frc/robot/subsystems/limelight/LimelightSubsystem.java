@@ -145,17 +145,17 @@ public class LimelightSubsystem extends SubsystemBase {
         if (estimatedPose.isPresent()) {
             if (estimatedPose.get()[0] != null) {
                 if (useMegaTag2) {
-                    swerveLocalizer.addMeasurement(estimatedPose.get()[0].timestampSeconds(), new Pose2d(estimatedPose.get()[0].pose().getTranslation(), estimatedPose.get()[0].pose().getRotation().minus(Rotation2d.fromDegrees(180))), VecBuilder.fill(.7, .7, 9999999));
+                    swerveLocalizer.addMeasurement(estimatedPose.get()[0].timestampSeconds(), estimatedPose.get()[0].pose(), VecBuilder.fill(.7, .7, 9999999));
                 } else {
-                    swerveLocalizer.addMeasurement(estimatedPose.get()[0].timestampSeconds(), new Pose2d(estimatedPose.get()[0].pose().getTranslation(), estimatedPose.get()[0].pose().getRotation().minus(Rotation2d.fromDegrees(180))), VecBuilder.fill(.5, .5, 9999999));
+                    swerveLocalizer.addMeasurement(estimatedPose.get()[0].timestampSeconds(), estimatedPose.get()[0].pose(), VecBuilder.fill(.5, .5, 9999999));
                 }
                 Logger.recordOutput(LIMELIGHT_LEFT + "/estimatedPose", estimatedPose.get()[0]);
             }
             if (estimatedPose.get()[1] != null) {
                 if (useMegaTag2) {
-                    swerveLocalizer.addMeasurement(estimatedPose.get()[1].timestampSeconds(), new Pose2d(estimatedPose.get()[1].pose().getTranslation(), estimatedPose.get()[1].pose().getRotation().minus(Rotation2d.fromDegrees(180))), VecBuilder.fill(.7, .7, 9999999));
+                    swerveLocalizer.addMeasurement(estimatedPose.get()[1].timestampSeconds(), estimatedPose.get()[1].pose(), VecBuilder.fill(.7, .7, 9999999));
                 } else {
-                    swerveLocalizer.addMeasurement(estimatedPose.get()[1].timestampSeconds(), new Pose2d(estimatedPose.get()[1].pose().getTranslation(), estimatedPose.get()[1].pose().getRotation().minus(Rotation2d.fromDegrees(180))), VecBuilder.fill(.5, .5, 9999999));
+                    swerveLocalizer.addMeasurement(estimatedPose.get()[1].timestampSeconds(), estimatedPose.get()[1].pose(), VecBuilder.fill(.5, .5, 9999999));
                 }
                 Logger.recordOutput(LIMELIGHT_RIGHT + "/estimatedPose",estimatedPose.get()[1]);
             }
@@ -168,10 +168,7 @@ public class LimelightSubsystem extends SubsystemBase {
         limelightIOs.forEach((name, io) -> {
             // TODO: figure out why 180 - abs()
             io.setRobotOrientation(
-                    AllianceFlipUtil.shouldFlip() ?
-                            (-1 * AllianceFlipUtil.apply(swerveLocalizer.getLatestPose().getRotation()).getDegrees()) :
-                            ((180 - Math.abs(swerveLocalizer.getLatestPose().getRotation().getDegrees()))
-                                    * (swerveLocalizer.getLatestPose().getRotation().getDegrees() > 0 ? -1 : 1))
+                    swerveLocalizer.getLatestPose().getRotation().getDegrees()
                     , 0, 0, 0, 0, 0);
         });
 

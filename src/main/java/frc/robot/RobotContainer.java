@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.aimSequences.AimGoalSupplier;
+import frc.robot.commands.aimSequences.ReefAimCommand;
 import frc.robot.commands.aimSequences.SuperCycleCommand;
 import frc.robot.commands.climb.ClimbCommand;
 import frc.robot.commands.climb.IdleClimbCommand;
@@ -271,16 +272,17 @@ public class RobotContainer {
             // Check if limelight ambiguity is below threshold and reset oculus pose if so
             double minAmbiguity = limelightSubsystem.getMinimumAmbiguity();
             if (minAmbiguity < RobotConstants.LimelightConstants.OCULUS_RESET_AMBIGUITY_THRESHOLD.get() && 
-                minAmbiguity != Double.MAX_VALUE) {
+                minAmbiguity != Double.MAX_VALUE
+                && Math.abs(swerve.getLocalizer().getSmoothedVelocity().getX())<1 && swerve.getLocalizer().getSmoothedVelocity().getY()<1) {
                 
-                System.out.println("Limelight ambiguity (" + minAmbiguity + ") below threshold (" + 
-                    RobotConstants.LimelightConstants.OCULUS_RESET_AMBIGUITY_THRESHOLD.get() + 
-                    "), resetting Oculus pose");
+                Logger.recordOutput("Oculus/ResetPose", true);
                 
                 oculusSubsystem.resetPose(
                     limelightSubsystem.getEstimatedPose().get()[0].pose(), 
                     true
                 );
+            }else{
+                Logger.recordOutput("Oculus/ResetPose", false);
             }
         }, oculusSubsystem));
 
@@ -337,7 +339,7 @@ public class RobotContainer {
         //with indexed intake
         driverController
                 .a()
-                .whileTrue(
+                .toggleOnTrue(
                         superstructure
                                 .runGoal(() -> {
                                     if (superstructure.hasAlgae()) {
@@ -404,6 +406,18 @@ public class RobotContainer {
                 .leftStick()
                 .whileTrue(
                         createScoringCommand(true, SuperstructureState.L2)
+                );
+
+
+        //testing delete
+        driverController
+                .y()
+                .whileTrue(
+                        Commands.sequence(                                
+                                new ReefAimCommand(() -> false, driverController, indicatorSubsystem),
+                                superstructure
+                                        .runGoal(() -> SuperstructureState.L4)
+                        )
                 );
         
     }

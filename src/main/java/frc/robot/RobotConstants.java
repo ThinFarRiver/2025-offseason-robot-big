@@ -264,7 +264,7 @@ public final class RobotConstants {
         public static class AimGainsClass {
             public static final TunableNumber AIM_KP = new TunableNumber("AIM/kp", 4.0);
             public static final TunableNumber AIM_KI = new TunableNumber("AIM/ki", 0);
-            public static final TunableNumber AIM_KD = new TunableNumber("AIM/kd", 0.15);
+            public static final TunableNumber AIM_KD = new TunableNumber("AIM/kd", 0.22);
         }
 
     }
@@ -283,7 +283,7 @@ public final class RobotConstants {
         public static final TunableNumber OMEGA_TOLERANCE_DEGREES = new TunableNumber("AIM/OMEGA_TOLERANCE_DEGREES", 1);
         public static final Measure<LinearVelocityUnit> MAX_AIMING_SPEED = MetersPerSecond.of(3.5);
         public static final Measure<LinearAccelerationUnit> MAX_AIMING_ACCELERATION = MetersPerSecondPerSecond.of(10);
-        public static final TunableNumber Edge_Case_Max_Delta = new TunableNumber("AIM/MAX DELTA", 0.3);
+        public static final TunableNumber Edge_Case_Max_Delta = new TunableNumber("AIM/MAX DELTA", 0.51);
         public static final TunableNumber ROBOT_TO_ALGAE_METERS = new TunableNumber("AIM/ROBOT_TO_ALGAE_METERS", 0.489);
         public static final TunableNumber ALGAE_TO_TAG_METERS = new TunableNumber("AIM/ALGAE_TO_TAG_METERS", 0);
         public static final TunableNumber HEXAGON_DANGER_DEGREES = new TunableNumber("AIM/HEXAGON_DANGER_DEGREES", 45);
