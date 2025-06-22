@@ -9,7 +9,7 @@ import frc.robot.utils.TunableNumber;
 // import gg.questnav.QuestNav;
 
 public class QuestNavIOReal implements QuestNavIO {
-    // private final QuestNav questNav;
+    // private final QuestNav questNav; // TODO: Uncomment when QuestNav vendor library is installed
     
     // Transform from robot center to Quest headset
     private final TunableNumber robotToQuestX = new TunableNumber("QuestNav/RobotToQuestX", 0.0);
@@ -17,7 +17,7 @@ public class QuestNavIOReal implements QuestNavIO {
     private final TunableNumber robotToQuestRotDeg = new TunableNumber("QuestNav/RobotToQuestRotDeg", 0.0);
 
     public QuestNavIOReal() {
-        // questNav = new QuestNav();
+        // questNav = new QuestNav(); // TODO: Uncomment when QuestNav vendor library is installed
         System.out.println("QuestNavIOReal initialized - QuestNav vendor library not yet imported");
     }
 
