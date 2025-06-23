@@ -25,8 +25,8 @@ public class QuestNavSubsystem extends SubsystemBase {
     private final TunableNumber stdDevRot = new TunableNumber("QuestNav/StdDevRotDeg", 2.0);
     
     // Transform from robot center to Quest headset
-    private final TunableNumber robotToQuestX = new TunableNumber("QuestNav/RobotToQuestX", 0.0);
-    private final TunableNumber robotToQuestY = new TunableNumber("QuestNav/RobotToQuestY", 0.0);
+    private final TunableNumber robotToQuestX = new TunableNumber("QuestNav/RobotToQuestX", 0.12);
+    private final TunableNumber robotToQuestY = new TunableNumber("QuestNav/RobotToQuestY", 0.337);
     private final TunableNumber robotToQuestRotDeg = new TunableNumber("QuestNav/RobotToQuestRotDeg", 0.0);
     
     // Enable/disable vision updates
@@ -145,9 +145,10 @@ public class QuestNavSubsystem extends SubsystemBase {
         );
 
         // Add measurement to swerve drive pose estimator through localizer
-        swerve.getLocalizer().addMeasurement(inputs.timestamp, robotPose, stdDevs);
+        //swerve.getLocalizer().addMeasurement(inputs.timestamp, robotPose, stdDevs);
         
         Logger.recordOutput("QuestNav/VisionMeasurementAdded", true);
+        
     }
 
     /**
