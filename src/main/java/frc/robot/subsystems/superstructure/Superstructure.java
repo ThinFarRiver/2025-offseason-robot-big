@@ -505,13 +505,19 @@ public class Superstructure extends SubsystemBase {
                             Commands.waitUntil(() -> !elevator.isZeroing())
                     );
         }
+        if (from == SuperstructureState.CORAL_GROUND_INTAKE || from == SuperstructureState.CORAL_OUTTAKE) {
+            return runSuperstructurePose(to.getValue().getPose())
+                    .alongWith(runSuperstructureRollers(to))
+                    .andThen(Commands.waitUntil(this::poseAtGoal));
+        }
         // Special handling for coral indexing while holding algae - only move intake
         if (to == SuperstructureState.CORAL_INDEXED_INTAKE) {
             return runIntake(to.getValue().getPose().intakeAngle())
                     .andThen(
                             Commands.waitUntil(intake::isAtGoal),
                             runSuperstructureRollers(to)
-                    );
+                    )
+                    .andThen(Commands.waitUntil(this::poseAtGoal));
         
         }
         // is safe to flip inorder to produce a smoother elevator motion

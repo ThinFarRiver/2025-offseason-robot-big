@@ -7,6 +7,7 @@ import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -16,6 +17,8 @@ import edu.wpi.first.units.measure.*;
 import frc.robot.RobotConstants;
 
 import static frc.robot.RobotConstants.IntakeConstants.*;
+import static frc.robot.RobotConstants.IntakeConstants.IntakePivotGainsClass.INTAKE_PIVOT_KG;
+import static frc.robot.RobotConstants.IntakeConstants.IntakePivotGainsClass.INTAKE_PIVOT_KS;
 
 public class IntakePivotIOReal implements IntakePivotIO {
     private final TalonFX motor = new TalonFX(RobotConstants.IntakeConstants.INTAKE_PIVOT_MOTOR_ID,
@@ -33,8 +36,8 @@ public class IntakePivotIOReal implements IntakePivotIO {
 
 
     private final VoltageOut voltageOut = new VoltageOut(0.0).withEnableFOC(false);
-    private final MotionMagicVoltage motionMagic = new MotionMagicVoltage(0.0).withEnableFOC(true);
-    private final MotionMagicConfigs motionMagicConfigs;
+    private final PositionDutyCycle motionMagic = new PositionDutyCycle(0.0).withEnableFOC(true);
+
 
     double targetAngleDeg = 0.0;
 
@@ -60,20 +63,19 @@ public class IntakePivotIOReal implements IntakePivotIO {
         config.withSlot0(new Slot0Configs()
                 .withKP(IntakePivotGainsClass.INTAKE_PIVOT_KP.get())
                 .withKI(IntakePivotGainsClass.INTAKE_PIVOT_KI.get())
-                .withKD(IntakePivotGainsClass.INTAKE_PIVOT_KD.get()));
+                .withKD(IntakePivotGainsClass.INTAKE_PIVOT_KD.get())
+                .withKS(IntakePivotGainsClass.INTAKE_PIVOT_KS.get())
+                .withKG(IntakePivotGainsClass.INTAKE_PIVOT_KG.get())
+                .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign));
 
-        motionMagicConfigs = new MotionMagicConfigs();
-        motionMagicConfigs.MotionMagicCruiseVelocity = INTAKE_PIVOT_CRUISE_VELOCITY.get();
-        motionMagicConfigs.MotionMagicAcceleration = INTAKE_PIVOT_ACCELERATION.get();
-        motionMagicConfigs.MotionMagicJerk = INTAKE_PIVOT_JERK.get();
-        config.withMotionMagic(motionMagicConfigs);
+        config.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
         motor.getConfigurator().apply(config);
 
         motor.clearStickyFaults();
 
         BaseStatusSignal.setUpdateFrequencyForAll(
-                50.0,
+                70,
                 velocityRotPerSec,
                 tempCelsius,
                 appliedVolts,
@@ -102,7 +104,7 @@ public class IntakePivotIOReal implements IntakePivotIO {
         inputs.motorVolts = motorVolts.getValueAsDouble();
         inputs.supplyCurrentAmps = supplyCurrentAmps.getValueAsDouble();
         inputs.statorCurrentAmps = statorCurrentAmps.getValueAsDouble();
-        inputs.currentAngleDeg = encoderPosToAngle(currentPositionRot.getValueAsDouble());
+        inputs.currentAngleDeg = encoderPosToAngle(currentPositionRot.getValueAsDouble())+90;
         inputs.targetAngleDeg = targetAngleDeg;
         inputs.motorVolts = motorVolts.getValueAsDouble();
 
@@ -110,15 +112,17 @@ public class IntakePivotIOReal implements IntakePivotIO {
             inputs.intakePivotKP = IntakePivotGainsClass.INTAKE_PIVOT_KP.get();
             inputs.intakePivotKI = IntakePivotGainsClass.INTAKE_PIVOT_KI.get();
             inputs.intakePivotKD = IntakePivotGainsClass.INTAKE_PIVOT_KD.get();
+            inputs.intakePivotKG = IntakePivotGainsClass.INTAKE_PIVOT_KG.get();
+            inputs.intakePivotKS = IntakePivotGainsClass.INTAKE_PIVOT_KS.get();
+
 
             motor.getConfigurator().apply(new Slot0Configs()
                     .withKP(inputs.intakePivotKP)
                     .withKI(inputs.intakePivotKI)
-                    .withKD(inputs.intakePivotKD));
-            motionMagicConfigs.MotionMagicCruiseVelocity = INTAKE_PIVOT_CRUISE_VELOCITY.get();
-            motionMagicConfigs.MotionMagicAcceleration = INTAKE_PIVOT_ACCELERATION.get();
-            motionMagicConfigs.MotionMagicJerk = INTAKE_PIVOT_JERK.get();
-            motor.getConfigurator().apply(motionMagicConfigs);
+                    .withKD(inputs.intakePivotKD)
+                    .withKG(inputs.intakePivotKG)
+                    .withKS(inputs.intakePivotKS));
+
         }
     }
 
@@ -130,7 +134,7 @@ public class IntakePivotIOReal implements IntakePivotIO {
     @Override
     public void setPivotAngle(double targetAngleDeg) {
         this.targetAngleDeg = targetAngleDeg;
-        motor.setControl(motionMagic.withPosition(angleToEncoderPos(targetAngleDeg)).withEnableFOC(true));
+        motor.setControl(motionMagic.withPosition(angleToEncoderPos(targetAngleDeg-90)).withEnableFOC(true));
     }
 
     @Override

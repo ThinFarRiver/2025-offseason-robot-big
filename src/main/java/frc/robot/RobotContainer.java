@@ -426,11 +426,17 @@ public class RobotContainer {
                                 )
                 );
                 
-        testerController.a().whileTrue(
-            superstructure
-                .runGoal(SuperstructureState.CORAL_GROUND_INTAKE)
-                .until(() -> superstructure.hasCoral())
-        );
+        testerController.a()
+                .whileTrue(
+                        superstructure
+                                .runGoal(() -> SuperstructureState.L4)
+                                .until(testerController.x())
+                                .andThen(
+                                        superstructure
+                                                .runGoal(() -> SuperstructureState.L4_EJECT)
+                                                .until(() -> !superstructure.hasCoral())
+                                )
+                );
     }
 
     public Command getAutonomousCommand() {

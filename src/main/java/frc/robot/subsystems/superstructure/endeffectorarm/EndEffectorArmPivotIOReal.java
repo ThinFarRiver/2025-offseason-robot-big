@@ -66,7 +66,7 @@ public class EndEffectorArmPivotIOReal implements EndEffectorArmPivotIO {
         motor.clearStickyFaults();
 
         BaseStatusSignal.setUpdateFrequencyForAll(
-                100.0,
+                100,
                 velocityRotPerSec,
                 tempCelsius,
                 appliedVolts,

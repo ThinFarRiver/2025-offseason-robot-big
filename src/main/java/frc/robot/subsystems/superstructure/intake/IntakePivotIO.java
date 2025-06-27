@@ -35,5 +35,7 @@ public interface IntakePivotIO {
         public double intakePivotKP = INTAKE_PIVOT_KP.get();
         public double intakePivotKI = INTAKE_PIVOT_KI.get();
         public double intakePivotKD = INTAKE_PIVOT_KD.get();
+        public double intakePivotKG = INTAKE_PIVOT_KG.get();
+        public double intakePivotKS = INTAKE_PIVOT_KS.get();
     }
 }
