@@ -324,7 +324,7 @@ public final class RobotConstants {
         public static final TunableNumber INTAKE_PIVOT_JERK = new TunableNumber("INTAKE_PIVOT/jerk", 0);
         public static final TunableNumber INTAKE_PIVOT_TOLERANCE = new TunableNumber("INTAKE_PIVIOT/tolerance", 3.5);
 
-        public static final double INTAKE_PIVOT_ENCODER_OFFSET = -0.2333984375;
+        public static final double INTAKE_PIVOT_ENCODER_OFFSET = 0.146474609375;
         //Motion constants for intake roller
         public static final TunableNumber INTAKE_VOLTAGE = new TunableNumber("INTAKE_ROLLER/intakeVoltage", 15.0);
         public static final TunableNumber INDEX_ROLLER_VOLTAGE = new TunableNumber("INTAKE_ROLLER/indexRollerVoltage", 15.0);
@@ -463,13 +463,13 @@ public final class RobotConstants {
          * Constants for the EndEffectorArm pivot motor gains.
          */
         public static class EndEffectorArmPivotGainsClass {
-            public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KP = new TunableNumber("EEARM/Pivot/PID/kp", 4);
+            public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KP = new TunableNumber("EEARM/Pivot/PID/kp", 5.9);
             public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KI = new TunableNumber("EEARM/Pivot/PID/ki", 0);
-            public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KD = new TunableNumber("EEARM/Pivot/PID/kd", 0.01);//0.3 or 0.1 or 0.01
+            public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KD = new TunableNumber("EEARM/Pivot/PID/kd", 0.1);//0.3 or 0.1 or 0.01
             public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KA = new TunableNumber("EEARM/Pivot/PID/ka", 0);
             public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KV = new TunableNumber("EEARM/Pivot/PID/kv", 0);
-            public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KS = new TunableNumber("EEARM/Pivot/PID/ks", 0.009);
-            public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KG = new TunableNumber("EEARM/Pivot/PID/kg", -0.02);
+            public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KS = new TunableNumber("EEARM/Pivot/PID/ks", 0.015);
+            public static final TunableNumber END_EFFECTOR_ARM_PIVOT_KG = new TunableNumber("EEARM/Pivot/PID/kg", -0.025);
         }
 
         /**

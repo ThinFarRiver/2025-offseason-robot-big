@@ -13,7 +13,6 @@ public class BeambreakIOReal implements BeambreakIO {
 
     public void updateInputs(BeambreakIOInputs inputs) {
         inputs.isBeambreakOn = beambreak.get();
-        voltageFilterValue = voltageFilter.calculate(beambreak.getVoltage());
-        inputs.voltage = voltageFilterValue;
+        inputs.voltage =beambreak.getVoltage();
     }
 }

@@ -36,4 +36,8 @@ when writing a new feature,
 <debugging>
 when asked by user to debug or user is reporting a problem, always add system.out.println() for debug messages.
 </debugging>
+
+<reading_code>
+when reading, understanding and explaining code, Always think with the code's connection with the compitition robot in mind. 
+
     
