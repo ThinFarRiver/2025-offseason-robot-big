@@ -8,6 +8,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.utils.LoggedTracer;
+import lib.ironpulse.utils.PhoenixUtils;
+import lib.ntext.NTParameterRegistry;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -63,15 +65,18 @@ public class Robot extends LoggedRobot {
   @Override
   public void robotPeriodic() {
     LoggedTracer.reset();
+    PhoenixUtils.refreshAll();
     CommandScheduler.getInstance().run();
+
     LoggedTracer.record("Commands");
     LoggedTracer.record("RobotPeriodic");
+    if(RobotConstants.TUNING)
+      NTParameterRegistry.refresh();
     robotContainer.robotPeriodic();
   }
 
   @Override
   public void disabledInit() {
-    robotContainer.setMegaTag2(false);
   }
 
   @Override
@@ -95,7 +100,6 @@ public class Robot extends LoggedRobot {
     if (autonomousCommand != null) {
       autonomousCommand.schedule();
     }
-    robotContainer.setMegaTag2(true);
   }
 
   @Override
@@ -111,7 +115,6 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void teleopInit() {
-    robotContainer.setMegaTag2(true);
   }
 
   @Override

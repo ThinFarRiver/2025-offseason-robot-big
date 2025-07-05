@@ -290,6 +290,8 @@ public final class RobotConstants {
         .encoderInverted(false)
         .build();
     public static SwerveSimConfig kSimConfig = SwerveSimConfig.builder()
+        .name("Swerve")
+        .dtS(LOOPER_DT)
         .wheelDiameter(Inch.of(4.03))
         .driveGearRatio(7.0)
         .steerGearRatio(20.0)
@@ -308,6 +310,8 @@ public final class RobotConstants {
         })
         .build();
     public static SwerveSJTU6Config kRealConfig = SwerveSJTU6Config.builder()
+        .name("Swerve")
+        .dtS(LOOPER_DT)
         .wheelDiameter(Inch.of(4.01))
         .driveGearRatio(6.7460317460317460317460317460317)
         .steerGearRatio(21.428571428571428571428571428571)
