@@ -11,7 +11,6 @@ import com.ctre.phoenix6.mechanisms.swerve.LegacySwerveModuleConstantsFactory;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.*;
-import edu.wpi.first.wpilibj.RobotController;
 import frc.robot.utils.TunableNumber;
 import org.frcteam6941.swerve.SwerveSetpointGenerator.KinematicLimits;
 
@@ -190,7 +189,7 @@ public final class RobotConstants {
         private static final int BACK_LEFT_DRIVE_MOTOR_ID = 2;
         private static final int BACK_LEFT_STEER_MOTOR_ID = 1;
         private static final int BACK_LEFT_ENCODER_ID = 0;
-        private static final double BACK_LEFT_ENCODER_OFFSET = 0.0383297031;
+        private static final double BACK_LEFT_ENCODER_OFFSET = 0.037841796875;
         private static final Measure<DistanceUnit> backLeftXPos = Meters.of(-0.29);
         private static final Measure<DistanceUnit> backLeftYPos = Meters.of(0.29);
         public static final LegacySwerveModuleConstants BackLeft = ConstantCreator.createModuleConstants(
@@ -306,7 +305,7 @@ public final class RobotConstants {
         public static final int INDEX_MOTOR_ID = 19;
         public static final int INTAKE_PIVOT_MOTOR_ID = 16;
         public static final int INTAKE_PIVOT_ENCODER_ID = 17;
-        public static final double INTAKE_PIVOT_ROTOR_ENCODER_RATIO = 45/11*56/20*56/8;
+        public static final double INTAKE_PIVOT_ROTOR_ENCODER_RATIO = 45 / 11 * 56 / 20 * 56 / 8;
 
         //Constants for intake roller
         public static final int STATOR_CURRENT_LIMIT_AMPS = 80;
@@ -425,6 +424,12 @@ public final class RobotConstants {
         public static final TunableNumber OCULUS_RESET_AMBIGUITY_THRESHOLD = new TunableNumber("LIMELIGHT/oculusResetAmbiguityThreshold", 0.15);
     }
 
+    public static class PhotonvisionConstants {
+        public static final String[] PV_CAMERA_NAMES = {"pv-cam1"};
+        public static final boolean[] SNAPSHOT_ENABLED = {true};
+        public static final int SNAPSHOT_PERIOD = 5; //seconds
+    }
+
     /**
      * Constants related to the EndEffectorArm subsystem.
      */
@@ -494,16 +499,16 @@ public final class RobotConstants {
         public static final TunableNumber STD_DEV_X = new TunableNumber("QuestNav/StdDevX", 0.02);
         public static final TunableNumber STD_DEV_Y = new TunableNumber("QuestNav/StdDevY", 0.02);
         public static final TunableNumber STD_DEV_ROT_DEG = new TunableNumber("QuestNav/StdDevRotDeg", 2.0);
-        
+
         // Transform from robot center to Quest headset (in meters and degrees)
         // TODO: Measure and update these values based on actual Quest mounting position
         public static final TunableNumber ROBOT_TO_QUEST_X = new TunableNumber("QuestNav/RobotToQuestX", 0.12);
         public static final TunableNumber ROBOT_TO_QUEST_Y = new TunableNumber("QuestNav/RobotToQuestY", 0.337);
         public static final TunableNumber ROBOT_TO_QUEST_ROT_DEG = new TunableNumber("QuestNav/RobotToQuestRotDeg", 10.0);
-        
+
         // Enable/disable vision updates
         public static final TunableNumber ENABLE_VISION_UPDATES = new TunableNumber("QuestNav/EnableVisionUpdates", 1.0);
-        
+
         // Pose reset validation thresholds
         public static final TunableNumber MAX_RESET_DISTANCE_METERS = new TunableNumber("QuestNav/MaxResetDistanceMeters", 0.01);
         public static final TunableNumber MAX_RESET_ANGLE_DEGREES = new TunableNumber("QuestNav/MaxResetAngleDegrees", 1);
