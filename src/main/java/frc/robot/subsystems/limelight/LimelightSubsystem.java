@@ -2,22 +2,17 @@ package frc.robot.subsystems.limelight;
 
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotConstants;
+import frc.robot.RobotStateRecorder;
 import frc.robot.subsystems.limelight.LimelightIO.PoseEstimate;
-import frc.robot.subsystems.swerve.Swerve;
 import frc.robot.utils.LoggedTracer;
 import lombok.Getter;
-
-import org.frcteam6941.swerve.localization.Localizer;
-import org.littletonrobotics.AllianceFlipUtil;
 import org.littletonrobotics.junction.Logger;
 
 import java.util.*;
-import java.util.function.BooleanSupplier;
 
 import static frc.robot.RobotConstants.LimelightConstants.*;
 
@@ -27,7 +22,6 @@ public class LimelightSubsystem extends SubsystemBase {
     @Getter
     public Optional<PoseEstimate[]> estimatedPose;
 
-    private final Localizer swerveLocalizer = Swerve.getInstance().getLocalizer();
     private boolean useMegaTag2 = false;
 
     public LimelightSubsystem(Map<String, LimelightIO> limelightIOs) {
@@ -37,16 +31,10 @@ public class LimelightSubsystem extends SubsystemBase {
         this.limelightIOs.forEach((key, value) -> limelightInputs.put(key, new LimelightIOInputsAutoLogged()));
     }
 
-    public static boolean rejectUpdate(PoseEstimate poseEstimate, AngularVelocity gyroRate) {
+    public static boolean rejectUpdate(PoseEstimate poseEstimate) {
         if (poseEstimate == null) {
             return true;
         }
-
-        // Angular velocity is too high to have accurate vision
-        if (gyroRate.compareTo(RobotConstants.SwerveConstants.maxAngularRate) > 0) {
-            return true;
-        }
-        //TODO: verify this condition whether usable
 
         // No tags :<
         if (poseEstimate.tagCount() == 0) {
@@ -100,11 +88,11 @@ public class LimelightSubsystem extends SubsystemBase {
         });
     }
 
-    public Optional<PoseEstimate[]> determinePoseEstimate(AngularVelocity gyroRate) {
+    public Optional<PoseEstimate[]> determinePoseEstimate() {
         limelightIOs.forEach((key, io) -> {
             LimelightIOInputsAutoLogged input = limelightInputs.get(key);
             if (input != null) {
-                io.setNewEstimate(input, !rejectUpdate(input.poseBlue, gyroRate));
+                io.setNewEstimate(input, !rejectUpdate(input.poseBlue));
             }
         });
 
@@ -141,47 +129,22 @@ public class LimelightSubsystem extends SubsystemBase {
         }
     }
 
-    private void addVisionMeasurement(Optional<PoseEstimate[]> estimatedPose) {
-        if (estimatedPose.isPresent()) {
-            if (estimatedPose.get()[0] != null) {
-                if (useMegaTag2) {
-                    swerveLocalizer.addMeasurement(estimatedPose.get()[0].timestampSeconds(), estimatedPose.get()[0].pose(), VecBuilder.fill(.7, .7, 9999999));
-                } else {
-                    swerveLocalizer.addMeasurement(estimatedPose.get()[0].timestampSeconds(), estimatedPose.get()[0].pose(), VecBuilder.fill(.5, .5, 9999999));
-                }
-                Logger.recordOutput(LIMELIGHT_LEFT + "/estimatedPose", estimatedPose.get()[0]);
-            }
-            if (estimatedPose.get()[1] != null) {
-                if (useMegaTag2) {
-                    swerveLocalizer.addMeasurement(estimatedPose.get()[1].timestampSeconds(), estimatedPose.get()[1].pose(), VecBuilder.fill(.7, .7, 9999999));
-                } else {
-                    swerveLocalizer.addMeasurement(estimatedPose.get()[1].timestampSeconds(), estimatedPose.get()[1].pose(), VecBuilder.fill(.5, .5, 9999999));
-                }
-                Logger.recordOutput(LIMELIGHT_RIGHT + "/estimatedPose",estimatedPose.get()[1]);
-            }
-        }
-    }
-
 
     @Override
     public void periodic() {
+        double oriDegrees = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d().getRotation().getDegrees();
         limelightIOs.forEach((name, io) -> {
-            io.setRobotOrientation(
-                    swerveLocalizer.getLatestPose().getRotation().getDegrees()
-                    , 0, 0, 0, 0, 0);
+            io.setRobotOrientation(oriDegrees, 0, 0, 0, 0, 0);
         });
-
-        AngularVelocity gyroRate = Units.DegreesPerSecond.of(swerveLocalizer.getSmoothedVelocity().getRotation().getDegrees());
 
         limelightIOs.forEach((name, io) -> {
             LimelightIOInputsAutoLogged input = limelightInputs.get(name);
             if (input != null) {
-                io.updateInputs(input, gyroRate);
+                io.updateInputs(input);
                 Logger.processInputs(name, input);
             }
         });
-        estimatedPose = determinePoseEstimate(gyroRate);
-        addVisionMeasurement(estimatedPose);
+        estimatedPose = determinePoseEstimate();
         LoggedTracer.record("Limelight");
     }
 }

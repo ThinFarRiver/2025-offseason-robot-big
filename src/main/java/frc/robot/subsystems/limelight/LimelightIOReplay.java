@@ -29,7 +29,7 @@ public class LimelightIOReplay implements LimelightIO {
     }
 
     @Override
-    public void updateInputs(LimelightIOInputs inputs, AngularVelocity gyroRate) {
+    public void updateInputs(LimelightIOInputs inputs) {
         inputs.useMegaTag2 = outputTable.get("useMegaTag2").getBoolean();
         inputs.newEstimate = outputTable.get("hasEstimate").getBoolean();
         inputs.poseRed = new PoseEstimate(

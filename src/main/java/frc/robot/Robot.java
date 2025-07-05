@@ -1,6 +1,5 @@
 package frc.robot;
 
-import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -8,9 +7,7 @@ import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
-import frc.robot.subsystems.swerve.Swerve;
 import frc.robot.utils.LoggedTracer;
-
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -22,130 +19,125 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter.AdvantageScopeOpenBeha
 import static frc.robot.RobotConstants.DriverCamera;
 
 public class Robot extends LoggedRobot {
-    private final Swerve swerve = Swerve.getInstance();
-    private Command autonomousCommand;
-    private RobotContainer robotContainer;
+  private Command autonomousCommand;
+  private RobotContainer robotContainer;
 
-    @Override
-    public void robotInit() {
-        if (!RobotConstants.useReplay) {
-            // logger initialization
-            Logger.addDataReceiver(new NT4Publisher());
-            Logger.addDataReceiver(new WPILOGWriter());
-        } else {
-            // Replaying a log, set up replay source
-            setUseTiming(false); // Run as fast as possible
-            String logPath = LogFileUtil.findReplayLog();
-            Logger.setReplaySource(new WPILOGReader(logPath));
-            Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"), AdvantageScopeOpenBehavior.ALWAYS));
-        }
+  public Robot() {
+    super(RobotConstants.LOOPER_DT);
+  }
 
-
-        Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
-        Logger.start();
-        WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
-
-        // early-stage initialization
-        DriverStation.silenceJoystickConnectionWarning(true);
-        PowerDistribution PDP = new PowerDistribution();
-        PDP.clearStickyFaults();
-        PDP.close();
-
-        // Camera used by driver to help aiming
-        // Remember to adjust fps & resolution in elastic (5fps, 300*200)
-        // If network is bad or rio is in high cpu usage, disable it
-        if (DriverCamera) {
-        //    CameraServer.startAutomaticCapture("Driver Camera", "/dev/video0");
-        }
-        robotContainer = new RobotContainer();
+  @Override
+  public void robotInit() {
+    if (!RobotConstants.useReplay) {
+      // logger initialization
+      Logger.addDataReceiver(new NT4Publisher());
+      Logger.addDataReceiver(new WPILOGWriter());
+    } else {
+      // Replaying a log, set up replay source
+      setUseTiming(false); // Run as fast as possible
+      String logPath = LogFileUtil.findReplayLog();
+      Logger.setReplaySource(new WPILOGReader(logPath));
+      Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"), AdvantageScopeOpenBehavior.ALWAYS));
     }
 
-    @Override
-    public void robotPeriodic() {
-        LoggedTracer.reset();
-        CommandScheduler.getInstance().run();
-        LoggedTracer.record("Commands");
-        robotContainer.getUpdateManager().runEnableSingle();
-        LoggedTracer.record("RobotPeriodic");
-    }
 
-    @Override
-    public void disabledInit() {
-        robotContainer.setMegaTag2(false);
-    }
+    Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
+    Logger.start();
+    WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
-    @Override
-    public void disabledPeriodic() {
-    }
+    // early-stage initialization
+    DriverStation.silenceJoystickConnectionWarning(true);
+    PowerDistribution PDP = new PowerDistribution();
+    PDP.clearStickyFaults();
+    PDP.close();
 
-    @Override
-    public void disabledExit() {
+    // Camera used by driver to help aiming
+    // Remember to adjust fps & resolution in elastic (5fps, 300*200)
+    // If network is bad or rio is in high cpu usage, disable it
+    if (DriverCamera) {
+      //    CameraServer.startAutomaticCapture("Driver Camera", "/dev/video0");
     }
+    robotContainer = new RobotContainer();
+  }
 
-    @Override
-    public void autonomousInit() {
-        try {
-            //todo: add autonomous command
-            autonomousCommand = Commands.none();
-        } catch (Exception e) {
-            System.out.println("Autonomous command failed: " + e);
-            e.printStackTrace();
-            autonomousCommand = null;
-        }
-        if (autonomousCommand != null) {
-            autonomousCommand.schedule();
-        }
-        swerve.auto();
-        robotContainer.getUpdateManager().invokeStart();
-        robotContainer.setMegaTag2(true);
+  @Override
+  public void robotPeriodic() {
+    LoggedTracer.reset();
+    CommandScheduler.getInstance().run();
+    LoggedTracer.record("Commands");
+    LoggedTracer.record("RobotPeriodic");
+    robotContainer.robotPeriodic();
+  }
+
+  @Override
+  public void disabledInit() {
+    robotContainer.setMegaTag2(false);
+  }
+
+  @Override
+  public void disabledPeriodic() {
+  }
+
+  @Override
+  public void disabledExit() {
+  }
+
+  @Override
+  public void autonomousInit() {
+    try {
+      //todo: add autonomous command
+      autonomousCommand = Commands.none();
+    } catch (Exception e) {
+      System.out.println("Autonomous command failed: " + e);
+      e.printStackTrace();
+      autonomousCommand = null;
     }
-
-    @Override
-    public void autonomousPeriodic() {
+    if (autonomousCommand != null) {
+      autonomousCommand.schedule();
     }
+    robotContainer.setMegaTag2(true);
+  }
 
-    @Override
-    public void autonomousExit() {
-        if (autonomousCommand != null) {
-            autonomousCommand.cancel();
-        }
-        robotContainer.getUpdateManager().invokeStop();
-        swerve.normal();
-        swerve.cancelFollow();
+  @Override
+  public void autonomousPeriodic() {
+  }
+
+  @Override
+  public void autonomousExit() {
+    if (autonomousCommand != null) {
+      autonomousCommand.cancel();
     }
+  }
 
-    @Override
-    public void teleopInit() {
-        swerve.normal();
-        robotContainer.getUpdateManager().invokeStart();
-        robotContainer.setMegaTag2(true);
-    }
+  @Override
+  public void teleopInit() {
+    robotContainer.setMegaTag2(true);
+  }
 
-    @Override
-    public void teleopPeriodic() {
+  @Override
+  public void teleopPeriodic() {
 
-    }
+  }
 
-    @Override
-    public void teleopExit() {
-        robotContainer.getUpdateManager().invokeStop();
-    }
+  @Override
+  public void teleopExit() {
+  }
 
-    @Override
-    public void testInit() {
-        CommandScheduler.getInstance().cancelAll();
-    }
+  @Override
+  public void testInit() {
+    CommandScheduler.getInstance().cancelAll();
+  }
 
-    @Override
-    public void testPeriodic() {
-    }
+  @Override
+  public void testPeriodic() {
+  }
 
-    @Override
-    public void testExit() {
-    }
+  @Override
+  public void testExit() {
+  }
 
-    @Override
-    public void simulationPeriodic() {
-        robotContainer.getUpdateManager().runSimulateSingle();
-    }
+  @Override
+  public void simulationPeriodic() {
+
+  }
 }

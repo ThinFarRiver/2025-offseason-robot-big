@@ -9,19 +9,16 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotConstants;
-import frc.robot.subsystems.swerve.Swerve;
+import frc.robot.RobotStateRecorder;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class QuestNavSubsystem extends SubsystemBase {
     private final QuestNavIO io;
     private final QuestNavIOInputsAutoLogged inputs = new QuestNavIOInputsAutoLogged();
-    
-    private final Swerve swerve;
 
     public QuestNavSubsystem(QuestNavIO io) {
         this.io = io;
-        this.swerve = Swerve.getInstance();
         
         Logger.recordOutput("QuestNav/Status", "Initialized");
     }
@@ -70,7 +67,7 @@ public class QuestNavSubsystem extends SubsystemBase {
      */
     public void resetPose(Pose2d robotPose, boolean overrideEnabledCheck) {
         // Get current field pose from swerve drive for validation
-        Pose2d currentFieldPose = swerve.getLocalizer().getCoarseFieldPose(inputs.timestamp);
+        Pose2d currentFieldPose = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
         
         // Calculate distance and angle differences
         double distanceDifference = robotPose.getTranslation().getDistance(currentFieldPose.getTranslation());

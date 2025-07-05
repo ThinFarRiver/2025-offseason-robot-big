@@ -5,12 +5,11 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 
+import frc.robot.RobotStateRecorder;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
-
-import frc.robot.subsystems.swerve.Swerve;
 
 
 public class SuperstructureVisualizer {
@@ -179,7 +178,7 @@ public class SuperstructureVisualizer {
     public void logCoralPose3D(boolean isIntakeHasCoral, boolean isEndeffectorHasCoral, boolean isEndeffectorHasAlgae) {
         // Check if coral is detected in the intake
         if (isIntakeHasCoral) {
-        Pose3d robotPose = new Pose3d(Swerve.getInstance().getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp()));
+        Pose3d robotPose = RobotStateRecorder.getPoseWorldRobotCurrent();
             // Calculate the position of the coral at the middle of the intake arm
             // The coral is positioned at the end of the intake arm
             double intakeAngleRad = Math.toRadians(currentIntakeAngleDeg - 90);
@@ -198,7 +197,7 @@ public class SuperstructureVisualizer {
             Logger.recordOutput("Superstructure/Visualizer/Gamepiece/IntakeCoral", new Pose3d());
         }
         if (isEndeffectorHasCoral) {
-            Pose3d robotPose = new Pose3d(Swerve.getInstance().getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp()));
+            Pose3d robotPose = RobotStateRecorder.getPoseWorldRobotCurrent();
             
             // Calculate the position of the coral at the middle of the end effector arm coral
             double endEffectorAngleRad = Math.toRadians(-currentEndEffectorAngleDeg-180);
@@ -218,7 +217,7 @@ public class SuperstructureVisualizer {
             Logger.recordOutput("Superstructure/Visualizer/Gamepiece/EECoral", new Pose3d());
         }
         if (isEndeffectorHasAlgae) {
-                Pose3d robotPose = new Pose3d(Swerve.getInstance().getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp()));
+                Pose3d robotPose = RobotStateRecorder.getPoseWorldRobotCurrent();
                 
                 // Calculate the position of the coral at the middle of the end effector arm coral
                 double endEffectorAngleRad = Math.toRadians(-currentEndEffectorAngleDeg-180);

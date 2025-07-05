@@ -2,167 +2,185 @@ package frc.robot.commands.aimSequences;
 
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.RobotConstants;
-import frc.robot.display.Display;
+import frc.robot.RobotStateRecorder;
 import frc.robot.subsystems.indicator.IndicatorIO;
 import frc.robot.subsystems.indicator.IndicatorSubsystem;
 import frc.robot.subsystems.superstructure.DestinationSupplier;
-import frc.robot.subsystems.superstructure.Superstructure;
-import frc.robot.subsystems.superstructure.SuperstructureState;
-import frc.robot.subsystems.superstructure.elevator.ElevatorSubsystem;
-import frc.robot.subsystems.swerve.Swerve;
-import org.littletonrobotics.AllianceFlipUtil;
+import lib.ironpulse.swerve.Swerve;
+import lib.ironpulse.swerve.commands.SwerveDriveToPoseParamsNT;
+import lib.ntext.NTParameter;
 import org.littletonrobotics.junction.Logger;
 
-import java.util.function.BooleanSupplier;
-
-import static frc.robot.RobotConstants.ReefAimConstants;
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Radians;
+import static lib.ironpulse.math.MathTools.epsilonEquals;
 
 public class ReefAimCommand extends Command {
-    private final Swerve swerve = Swerve.getInstance();
-    private final ProfiledPIDController xPID = new ProfiledPIDController(
-            RobotConstants.SwerveConstants.AimGainsClass.AIM_KP.get(),
-            RobotConstants.SwerveConstants.AimGainsClass.AIM_KI.get(),
-            RobotConstants.SwerveConstants.AimGainsClass.AIM_KD.get(),
-            new TrapezoidProfile.Constraints(
-                    ReefAimConstants.MAX_AIMING_SPEED.magnitude(),
-                    ReefAimConstants.MAX_AIMING_ACCELERATION.magnitude()));
-    private final ProfiledPIDController yPID = new ProfiledPIDController(
-            RobotConstants.SwerveConstants.AimGainsClass.AIM_KP.get(),
-            RobotConstants.SwerveConstants.AimGainsClass.AIM_KI.get(),
-            RobotConstants.SwerveConstants.AimGainsClass.AIM_KD.get(),
-            new TrapezoidProfile.Constraints(
-                    ReefAimConstants.MAX_AIMING_SPEED.magnitude(),
-                    ReefAimConstants.MAX_AIMING_ACCELERATION.magnitude()));
-    private final BooleanSupplier stop;
-    private final CommandXboxController driverController; 
-    private final IndicatorSubsystem indicatorSubsystem;
-    private boolean rightReef; // true if shooting right reef
-    private boolean xFinished = false;
-    private boolean yFinished = false;
-    private boolean omegaFinished = false;
-    private Pose2d robotPose, tagPose, destinationPose, finalDestinationPose;
-    private Translation2d translationalVelocity, controllerVelocity;
+  private final static String kTag = "Commands/ReefAimCommand";
+  private final Swerve swerve;
+  private final IndicatorSubsystem indicatorSubsystem;
+  private boolean rightReef; // true if shooting right reef
+  private boolean translationOnTarget = false;
+  private boolean rotationOnTarget = false;
+  private Pose2d poseWorldRobot, velocityWorldRobot, tagPose, poseWorldTarget, finalDestinationPose;
+  private Translation2d translationalVelocity, controllerVelocity;
+  private ProfiledPIDController translationController;
+  private ProfiledPIDController rotationController;
 
 
-    public ReefAimCommand(BooleanSupplier stop,
-                          CommandXboxController driverController, IndicatorSubsystem indicatorSubsystem) {
-        addRequirements(swerve);
-        this.stop = stop;
-        this.driverController = driverController;
-        this.indicatorSubsystem = indicatorSubsystem;
+  public ReefAimCommand(Swerve swerve, IndicatorSubsystem indicatorSubsystem) {
+    this.indicatorSubsystem = indicatorSubsystem;
+    this.swerve = swerve;
+
+    translationController = new ProfiledPIDController(
+        ReefAimCommandParamsNT.translationKp.getValue(),
+        ReefAimCommandParamsNT.translationKi.getValue(),
+        ReefAimCommandParamsNT.translationKd.getValue(),
+        new TrapezoidProfile.Constraints(
+            ReefAimCommandParamsNT.translationVelocityMax.getValue(),
+            ReefAimCommandParamsNT.translationAccelerationMax.getValue()
+        )
+    );
+    rotationController = new ProfiledPIDController(
+        ReefAimCommandParamsNT.rotationKp.getValue(),
+        ReefAimCommandParamsNT.rotationKi.getValue(),
+        ReefAimCommandParamsNT.rotationKd.getValue(),
+        new TrapezoidProfile.Constraints(
+            ReefAimCommandParamsNT.rotationVelocityMax.getValue(),
+            ReefAimCommandParamsNT.rotationAccelerationMax.getValue()
+        )
+    );
+    addRequirements(swerve);
+  }
+
+  @Override
+  public void initialize() {
+    // tuning
+    if (RobotConstants.TUNING) {
+      translationController.setP(ReefAimCommandParamsNT.translationKp.getValue());
+      translationController.setI(SwerveDriveToPoseParamsNT.translationKi.getValue());
+      translationController.setD(SwerveDriveToPoseParamsNT.translationKd.getValue());
+      translationController.setConstraints(new TrapezoidProfile.Constraints(
+          SwerveDriveToPoseParamsNT.translationVelocityMax.getValue(),
+          SwerveDriveToPoseParamsNT.rotationAccelerationMax.getValue()
+      ));
+
+      rotationController.setP(SwerveDriveToPoseParamsNT.rotationKp.getValue());
+      rotationController.setI(SwerveDriveToPoseParamsNT.rotationKi.getValue());
+      rotationController.setD(SwerveDriveToPoseParamsNT.rotationKd.getValue());
+      rotationController.setConstraints(new TrapezoidProfile.Constraints(
+          SwerveDriveToPoseParamsNT.rotationVelocityMax.getValue(),
+          SwerveDriveToPoseParamsNT.rotationAccelerationMax.getValue()
+      ));
     }
 
-    @Override
-    public void initialize() {
-        robotPose = swerve.getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp());
-        
-        // Calculate destination
-        tagPose = AimGoalSupplier.getNearestTag(robotPose);
+    // get current state
+    poseWorldRobot = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
+    velocityWorldRobot = RobotStateRecorder.getVelocityWorldRobot();
 
-        // Choose target based on game piece
-        if (DestinationSupplier.getInstance().getCurrentGamePiece() == DestinationSupplier.GamePiece.ALGAE_INTAKING) {
-            finalDestinationPose = AimGoalSupplier.getFinalAlgaeTarget(tagPose);
-        } else {
-            rightReef = DestinationSupplier.getInstance().getCurrentBranch();
-            finalDestinationPose = AimGoalSupplier.getFinalCoralTarget(tagPose, rightReef);
-        }
+    // calculate destination
+    tagPose = AimGoalSupplier.getNearestTag(poseWorldRobot);
 
-        // Now that finalDestinationPose is set, we can get the drive target
-        destinationPose = AimGoalSupplier.getDriveTarget(robotPose, finalDestinationPose);
-
-        // Get velocities in field coordinates
-        double vx = swerve.getInstance().getLocalizer().getSmoothedVelocity().getX();
-        double vy = swerve.getInstance().getLocalizer().getSmoothedVelocity().getY();
-        
-        // Flip velocities if needed
-        if (AllianceFlipUtil.shouldFlip()) {
-            vx = -vx;
-            vy = -vy;
-        }
-
-        // PID init with field-relative velocities
-        xPID.reset(robotPose.getX(), swerve.getSwerveVelocity().vxMetersPerSecond);
-        yPID.reset(robotPose.getY(), swerve.getSwerveVelocity().vyMetersPerSecond);
-
-        indicatorSubsystem.setPattern(IndicatorIO.Patterns.AIMING);
+    // choose target based on game piece
+    if (DestinationSupplier.getInstance().getCurrentGamePiece() == DestinationSupplier.GamePiece.ALGAE_INTAKING) {
+      finalDestinationPose = AimGoalSupplier.getFinalAlgaeTarget(tagPose);
+    } else {
+      rightReef = DestinationSupplier.getInstance().getCurrentBranch();
+      finalDestinationPose = AimGoalSupplier.getFinalCoralTarget(tagPose, rightReef);
     }
 
-    @Override
-    public void execute() {
-        xPID.setConstraints(
-                new TrapezoidProfile.Constraints(
-                        ReefAimConstants.MAX_AIMING_SPEED.magnitude() ,
-                        ReefAimConstants.MAX_AIMING_ACCELERATION.magnitude() ));
-        yPID.setConstraints(
-                new TrapezoidProfile.Constraints(
-                        ReefAimConstants.MAX_AIMING_SPEED.magnitude(),
-                        ReefAimConstants.MAX_AIMING_ACCELERATION.magnitude()));
-        if (RobotConstants.TUNING) {
-            xPID.setPID(RobotConstants.SwerveConstants.AimGainsClass.AIM_KP.get(),
-                    RobotConstants.SwerveConstants.AimGainsClass.AIM_KI.get(),
-                    RobotConstants.SwerveConstants.AimGainsClass.AIM_KD.get());
-            yPID.setPID(RobotConstants.SwerveConstants.AimGainsClass.AIM_KP.get(),
-                    RobotConstants.SwerveConstants.AimGainsClass.AIM_KI.get(),
-                    RobotConstants.SwerveConstants.AimGainsClass.AIM_KD.get());
-        }
+    // Now that finalDestinationPose is set, we can get the drive target
+    poseWorldTarget = AimGoalSupplier.getDriveTarget(poseWorldRobot, finalDestinationPose);
 
-        robotPose = swerve.getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp());
-        destinationPose = AimGoalSupplier.getDriveTarget(robotPose, finalDestinationPose);
+    // PID init with field-relative velocities
+    translationController.reset(velocityWorldRobot.getTranslation().getNorm());
+    rotationController.reset(velocityWorldRobot.getRotation().getRadians());
+    indicatorSubsystem.setPattern(IndicatorIO.Patterns.AIMING);
+  }
 
-        xPID.setGoal(destinationPose.getTranslation().getX());
-        yPID.setGoal(destinationPose.getTranslation().getY());
-        swerve.setLockHeading(true);
-        swerve.setHeadingTarget(destinationPose.getRotation().getDegrees());
-        
-        double xPIDOutput = xPID.calculate(robotPose.getX());
-        double yPIDOutput = yPID.calculate(robotPose.getY());
-        
-        if (AllianceFlipUtil.shouldFlip()) {
-            xPIDOutput = -xPIDOutput;
-            yPIDOutput = -yPIDOutput;
-        }
-        
-        translationalVelocity = new Translation2d(xPIDOutput, yPIDOutput);
-        
-        swerve.drive(translationalVelocity, 0.0, true, false);
-        Display.getInstance().setAimingTarget(destinationPose);
+  @Override
+  public void execute() {
+    poseWorldRobot = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
+    poseWorldTarget = AimGoalSupplier.getDriveTarget(poseWorldRobot, finalDestinationPose);
+    Pose2d poseRobotTarget = poseWorldTarget.relativeTo(poseWorldRobot);
 
-        Logger.recordOutput("ReefAimCommand/tagPose", tagPose);
-        Logger.recordOutput("ReefAimCommand/destinationPose", destinationPose);
-        Logger.recordOutput("ReefAimCommand/finalDestinationPose", finalDestinationPose);
-        Logger.recordOutput("ReefAimCommand/translationalVelocity", translationalVelocity);
-        Logger.recordOutput("ReefAimCommand/controllerVelocity", controllerVelocity);
-        Logger.recordOutput("ReefAimCommand/shouldFlip", AllianceFlipUtil.shouldFlip());
-    }
+    // compute translation error, tu
+    Translation2d pRT = poseRobotTarget.getTranslation();
+    double pRT_norm = pRT.getNorm();
+    Rotation2d pRT_dir = pRT.getAngle();
+    // NOTE: as pRT_norm is always positive, then vRT_norm is always negative.
+    // to make the robot move along but not opposite to pRT_dir, we take the minus sign before vRT_norm
+    double vRT_norm = translationController.calculate(pRT_norm, 0.0);
+    Translation2d vRT = new Translation2d(-vRT_norm, pRT_dir);
 
-    @Override
-    public boolean isFinished() {
-        xFinished = Math.abs(robotPose.getX() - finalDestinationPose.getX()) < ReefAimConstants.X_TOLERANCE_METERS.get();
-        yFinished = Math.abs(robotPose.getY() - finalDestinationPose.getY()) < ReefAimConstants.Y_TOLERANCE_METERS.get();
-        omegaFinished = Swerve.getInstance().aimingReady(ReefAimConstants.OMEGA_TOLERANCE_DEGREES.get(), 3);
-        Logger.recordOutput("ReefAimCommand/xFinished", xFinished);
-        Logger.recordOutput("ReefAimCommand/yFinished", yFinished);
-        Logger.recordOutput("ReefAimCommand/omegaFinished", omegaFinished);
-        Logger.recordOutput("ReefAimCommand/emergencyStopped", stop.getAsBoolean());
-        return (xFinished && yFinished && omegaFinished) || stop.getAsBoolean();
-    }
+    // compute rotation err, turn into angular velocity scalar
+    double thetaRT = poseRobotTarget.getRotation().getRadians();
+    double omegaRT = -rotationController.calculate(thetaRT, 0.0);
 
-    @Override
-    public void end(boolean interrupted) {
-        swerve.drive(new Translation2d(), 0.0, true, false);
-        swerve.setLockHeading(false);
-        if (!interrupted) indicatorSubsystem.setPattern(IndicatorIO.Patterns.AIMED);
-        else indicatorSubsystem.setPattern(IndicatorIO.Patterns.NORMAL);
-    }
+    // compose and run velocity
+    ChassisSpeeds VRT = new ChassisSpeeds(vRT.getX(), vRT.getY(), omegaRT);
+    swerve.runTwist(VRT);
 
-    @Override
-    public InterruptionBehavior getInterruptionBehavior() {
-        return InterruptionBehavior.kCancelIncoming;
-    }
+    // logging
+    Logger.recordOutput(kTag + "/tagPose", tagPose);
+    Logger.recordOutput(kTag + "/destinationPose", poseWorldTarget);
+    Logger.recordOutput(kTag + "/finalDestinationPose", finalDestinationPose);
+    Logger.recordOutput(kTag + "/translationalVelocity", translationalVelocity);
+    Logger.recordOutput(kTag + "/controllerVelocity", controllerVelocity);
+  }
+
+  @Override
+  public boolean isFinished() {
+
+    Pose2d poseRobotTarget = poseWorldTarget.relativeTo(poseWorldRobot);
+    translationOnTarget = epsilonEquals(
+        poseRobotTarget.getTranslation(), new Translation2d(),
+        ReefAimCommandParamsNT.translationOnTargetToleranceMeter.getValue()
+    );
+    rotationOnTarget = epsilonEquals(
+        poseRobotTarget.getRotation().getRadians(),
+        0.0,
+        Degrees.of(ReefAimCommandParamsNT.rotationOnTargetToleranceDegree.getValue()).in(Radians)
+    );
+    Logger.recordOutput(kTag + "translationOnTarget", translationOnTarget);
+    Logger.recordOutput(kTag + "rotationOnTarget", rotationOnTarget);
+    return translationOnTarget && rotationOnTarget;
+  }
+
+  @Override
+  public void end(boolean interrupted) {
+    swerve.runStop();
+    if (!interrupted) indicatorSubsystem.setPattern(IndicatorIO.Patterns.AIMED);
+    else indicatorSubsystem.setPattern(IndicatorIO.Patterns.NORMAL);
+
+  }
+
+  @Override
+  public InterruptionBehavior getInterruptionBehavior() {
+    return InterruptionBehavior.kCancelIncoming;
+  }
+
+  @NTParameter(tableName = "Params/" + kTag)
+  public static class ReefAimCommandParams {
+    static final double translationKp = 4.5;
+    static final double translationKi = 0.0;
+    static final double translationKd = 0.0;
+    static final double translationVelocityMax = 4.5;
+    static final double translationAccelerationMax = 17.0;
+
+    static final double rotationKp = 5.0;
+    static final double rotationKi = 0.0;
+    static final double rotationKd = 0.0;
+    static final double rotationVelocityMax = 5.0;
+    static final double rotationAccelerationMax = 20.0;
+
+    static final double translationOnTargetToleranceMeter = 0.02;
+    static final double rotationOnTargetToleranceDegree = 1;
+  }
 }

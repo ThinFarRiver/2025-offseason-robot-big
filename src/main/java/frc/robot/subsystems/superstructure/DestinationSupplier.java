@@ -6,8 +6,9 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.RobotConstants;
+import frc.robot.RobotStateRecorder;
 import frc.robot.commands.aimSequences.AimGoalSupplier;
-import frc.robot.subsystems.swerve.Swerve;
+import lib.ironpulse.swerve.Swerve;
 import lombok.Getter;
 import lombok.Setter;
 import org.littletonrobotics.junction.AutoLog;
@@ -43,7 +44,7 @@ public class DestinationSupplier {
     private GamePiece currentGamePiece = GamePiece.CORAL_SCORING;
 
     private DestinationSupplier() {
-        swerve = Swerve.getInstance();
+
     }
 
     public static DestinationSupplier getInstance() {
@@ -84,7 +85,7 @@ public class DestinationSupplier {
 
     public SuperstructureState getPreState() {
         if (currentGamePiece == GamePiece.ALGAE_INTAKING) {
-            updatePokeSetpointByTag(AimGoalSupplier.getNearestTagID(swerve.getLocalizer().getCoarseFieldPose(Timer.getFPGATimestamp())));
+            updatePokeSetpointByTag(AimGoalSupplier.getNearestTagID(RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d()));
         }
         return switch (currentGamePiece) {
             case ALGAE_INTAKING -> algaeIntakeState;

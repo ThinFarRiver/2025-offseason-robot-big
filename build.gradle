@@ -9,6 +9,12 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+// repos
+repositories {
+    mavenCentral()
+    maven { url 'https://oss.sonatype.org/content/repositories/staging/' }
+}
+
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 
 // Define my targets (RoboRIO) and artifacts (deployable files)
@@ -51,6 +57,22 @@ wpi.java.debugJni = false
 // Set this to true to enable desktop support.
 def includeDesktopSupport = true
 
+// source sets for external annotation processors
+sourceSets {
+    external {
+        java.srcDir 'src/ext/java'
+    }
+}
+dependencies {
+    externalAnnotationProcessor wpi.java.deps.wpilibAnnotations()
+    externalImplementation wpi.java.deps.wpilib()
+    externalImplementation wpi.java.vendor.java()
+    externalImplementation 'com.palantir.javapoet:javapoet:0.7.0'
+    externalImplementation 'com.google.auto.service:auto-service:1.1.1'
+    externalAnnotationProcessor 'com.google.auto.service:auto-service:1.1.1'
+}
+
+
 // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
 // Also defines JUnit 5.
 dependencies {
@@ -88,6 +110,9 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation sourceSets.external.output
+    annotationProcessor sourceSets.external.output
 }
 
 test {
@@ -103,7 +128,11 @@ wpi.sim.addDriverstation()
 // in order to make them all available at runtime. Also adding the manifest so WPILib
 // knows where to look for our Robot Class.
 jar {
-    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    from {
+        configurations.runtimeClasspath
+                .filter { it.exists() }
+                .collect { it.isDirectory() ? it : zipTree(it) }
+    }
     from sourceSets.main.allSource
     manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
     duplicatesStrategy = DuplicatesStrategy.INCLUDE

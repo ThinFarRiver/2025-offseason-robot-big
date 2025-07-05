@@ -130,7 +130,7 @@ public class LimelightIOReal implements LimelightIO {
     }
 
     @Override
-    public void updateInputs(LimelightIOInputs inputs, AngularVelocity gyroRate) {
+    public void updateInputs(LimelightIOInputs inputs) {
         PoseEstimate poseBlue;
         PoseEstimate poseRed;
         if (useMegaTag2) {

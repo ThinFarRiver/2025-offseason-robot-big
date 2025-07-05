@@ -15,7 +15,7 @@ public interface LimelightIO {
         inputs.newEstimate = state;
     }
 
-    void updateInputs(LimelightIOInputs inputs, AngularVelocity gyroRate);
+    void updateInputs(LimelightIOInputs inputs);
 
     default void setMegaTag2(boolean useMegaTag2) {
         System.out.println("setMegaTag2 = " + useMegaTag2);
