@@ -34,7 +34,7 @@ public final class RobotConstants {
     public static final boolean TUNING = true;
     public static final boolean DriverCamera = true;
     public static final boolean useReplay = false;
-    public static String CANIVORE_CAN_BUS_NAME = "10541Canivore0";
+    public static String CANIVORE_CAN_BUS_NAME = "6941Canivore0";
     public static String CLIMBER_CAN_BUS = "rio";
 
     /**
@@ -221,7 +221,7 @@ public final class RobotConstants {
          * Constants for the heading controller used in the swerve drivetrain.
          */
         public static class headingController {
-            public static final frc.robot.utils.TunableNumber HEADING_KP = new frc.robot.utils.TunableNumber(
+            public static final TunableNumber HEADING_KP = new TunableNumber(
                     "HEADING PID/kp", 0.08);
             public static final frc.robot.utils.TunableNumber HEADING_KI = new frc.robot.utils.TunableNumber(
                     "HEADING PID/ki", 0.000);
@@ -303,6 +303,7 @@ public final class RobotConstants {
     public static class IntakeConstants {
         public static final int INTAKE_MOTOR_ID = 15;
         public static final int INDEX_MOTOR_ID = 19;
+        public static final int INDEX_FOLLOWER_MOTOR_ID = 24; // Add your actual motor ID here
         public static final int INTAKE_PIVOT_MOTOR_ID = 16;
         public static final int INTAKE_PIVOT_ENCODER_ID = 17;
         public static final double INTAKE_PIVOT_ROTOR_ENCODER_RATIO = 45 / 11 * 56 / 20 * 56 / 8;
@@ -310,8 +311,10 @@ public final class RobotConstants {
         //Constants for intake roller
         public static final int STATOR_CURRENT_LIMIT_AMPS = 80;
         public static final int SUPPLY_CURRENT_LIMIT_AMPS = 80;
-        public static final boolean IS_BRAKE = true;
-        public static final boolean IS_INVERT = true;
+        public static final boolean IS_BRAKE = false;
+        public static final boolean IS_INTAKER_INVERT = true;
+        public static final boolean IS_INDEXER_INVERT = true;
+        public static final boolean INDEX_FOLLOWER_INVERT = true; // Set based on your mechanical setup
         public static final double REDUCTION = 1;
         public static final double moi = 0;//inertia for simulation
         public static final double ROLLER_RATIO = 1;
@@ -323,7 +326,7 @@ public final class RobotConstants {
         public static final TunableNumber INTAKE_PIVOT_JERK = new TunableNumber("INTAKE_PIVOT/jerk", 0);
         public static final TunableNumber INTAKE_PIVOT_TOLERANCE = new TunableNumber("INTAKE_PIVIOT/tolerance", 3.5);
 
-        public static final double INTAKE_PIVOT_ENCODER_OFFSET = 0.146474609375;
+        public static final double INTAKE_PIVOT_ENCODER_OFFSET = 0.0263671875 - 0.25;
         //Motion constants for intake roller
         public static final TunableNumber INTAKE_VOLTAGE = new TunableNumber("INTAKE_ROLLER/intakeVoltage", 15.0);
         public static final TunableNumber INDEX_ROLLER_VOLTAGE = new TunableNumber("INTAKE_ROLLER/indexRollerVoltage", 15.0);
@@ -390,17 +393,32 @@ public final class RobotConstants {
         public static final int ELEVATOR_ZEROING_FILTER_SIZE = 5;
         public static final TunableNumber ELEVATOR_GOAL_TOLERANCE = new TunableNumber("Elevator/GoalTolerance", 0.02);
 
-        public static final TunableNumber motionAcceleration = new TunableNumber("Elevator/MotionAcceleration",
-                300);
-        public static final TunableNumber motionCruiseVelocity = new TunableNumber("Elevator/MotionCruiseVelocity",
-                100);
-        public static final TunableNumber motionJerk = new TunableNumber("Elevator/MotionJerk",
+
+        
+        // Dynamic Motion Magic configs - separate for up and down movement
+        public static final TunableNumber motionAccelerationUp = new TunableNumber("Elevator/MotionAccelerationUp",
+                400);
+        public static final TunableNumber motionCruiseVelocityUp = new TunableNumber("Elevator/MotionCruiseVelocityUp",
+                250);
+        public static final TunableNumber motionJerkUp = new TunableNumber("Elevator/MotionJerkUp",
                 0.0);
-        public static final TunableNumber MAX_EXTENSION_METERS = new TunableNumber("ELEVATOR/maxExtension",
-                1.41);
-        public static final TunableNumber ELEVATOR_ZEROING_CURRENT = new TunableNumber("ELEVATOR/zeroingCurrent",
+        
+        public static final TunableNumber motionAccelerationDown = new TunableNumber("Elevator/MotionAccelerationDown",
+                300);
+        public static final TunableNumber motionCruiseVelocityDown = new TunableNumber("Elevator/MotionCruiseVelocityDown",
+                100);
+        public static final TunableNumber motionJerkDown = new TunableNumber("Elevator/MotionJerkDown",
+                0.0);
+        public static final TunableNumber MAX_EXTENSION_METERS = new TunableNumber("Elevator/maxExtension",
+                1.475);
+        public static final TunableNumber ELEVATOR_ZEROING_CURRENT = new TunableNumber("Elevator/zeroingCurrent",
                 40);
-        public static final TunableNumber SAFE_HEIGHT_FLIP = new TunableNumber("ELEVATOR/safeHeightFlip", 0.54);
+        public static final TunableNumber SAFE_HEIGHT_FLIP = new TunableNumber("Elevator/safeHeightFlip", 0.41);
+
+        // SysId characterization constants
+        public static final TunableNumber SYSID_RAMP_RATE_VOLTS_PER_SEC = new TunableNumber("ELEVATOR/SysId/rampRateVoltsPerSec", 1);
+        public static final TunableNumber SYSID_DYNAMIC_VOLTAGE = new TunableNumber("ELEVATOR/SysId/dynamicVoltage", 5);
+        public static final TunableNumber SYSID_TIMEOUT_SECONDS = new TunableNumber("ELEVATOR/SysId/timeoutSeconds", 10.0);
 
     }
 
@@ -408,13 +426,13 @@ public final class RobotConstants {
      * Constants for the elevator motor gains.
      */
     public static class ElevatorGainsClass {
-        public static final TunableNumber ELEVATOR_KP = new TunableNumber("ELEVATOR PID/kp", 2.5);
+        public static final TunableNumber ELEVATOR_KP = new TunableNumber("ELEVATOR PID/kp", 2.3);
         public static final TunableNumber ELEVATOR_KI = new TunableNumber("ELEVATOR PID/ki", 0);
         public static final TunableNumber ELEVATOR_KD = new TunableNumber("ELEVATOR PID/kd", 0);
-        public static final TunableNumber ELEVATOR_KA = new TunableNumber("ELEVATOR PID/ka", 0);
-        public static final TunableNumber ELEVATOR_KV = new TunableNumber("ELEVATOR PID/kv", 0.08);// 0.107853495
-        public static final TunableNumber ELEVATOR_KS = new TunableNumber("ELEVATOR PID/ks", 0.1);
-        public static final TunableNumber ELEVATOR_KG = new TunableNumber("ELEVATOR PID/kg", 0.2);//0.3
+        public static final TunableNumber ELEVATOR_KA = new TunableNumber("ELEVATOR PID/ka", 0.0068);
+        public static final TunableNumber ELEVATOR_KV = new TunableNumber("ELEVATOR PID/kv", 0.1308);// 0.107853495
+        public static final TunableNumber ELEVATOR_KS = new TunableNumber("ELEVATOR PID/ks", 0.13);
+        public static final TunableNumber ELEVATOR_KG = new TunableNumber("ELEVATOR PID/kg", 0.32);//0.3
     }
 
     public static class LimelightConstants {
