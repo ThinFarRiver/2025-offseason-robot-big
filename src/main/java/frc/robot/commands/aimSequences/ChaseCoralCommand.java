@@ -48,9 +48,10 @@ public class ChaseCoralCommand extends Command {
 
   @Override
   public void initialize() {
-    turnFeedController.enableContinuousInput(-Math.PI, Math.PI);
+    turnAngleController.enableContinuousInput(-Math.PI, Math.PI);
     driveController.reset();
     turnFeedController.reset();
+    turnAngleController.reset();
     chaseTarget = Pair.of(
         0.0,
         swerve.getEstimatedPose().getRotation().toRotation2d()
@@ -61,7 +62,7 @@ public class ChaseCoralCommand extends Command {
   @Override
   public void execute() {
     // handle state transition
-    if (vision.hasAnyTargets())
+    if (!vision.getAllRawDetections().isEmpty())
       state = State.ACTIVE_CHASING;
     else
       state = State.BLIND_CHASING;
@@ -123,17 +124,17 @@ public class ChaseCoralCommand extends Command {
 
   @NTParameter(tableName = "Params/Commands/ChaseCoralCommand")
   public static class ChaseCoralCommandParams {
-    static final double driveKp = 2.0;
+    static final double driveKp = 0.5;
     static final double driveKi = 0.0;
-    static final double driveKd = 0.1;
+    static final double driveKd = 0.0;
 
-    static final double turnKp = 2.0;
+    static final double turnKp = 0.5;
     static final double turnKi = 0.0;
-    static final double turnKd = 0.1;
+    static final double turnKd = 0.0;
 
     static final double turnAngleKp = 2.0;
     static final double turnAngleKi = 0.0;
-    static final double turnAngleKd = 0.1;
+    static final double turnAngleKd = 0.0;
 
     static final double chasePitchSetpoint = -14.0;
     static final double chaseYawSetpoint = 0.0;
