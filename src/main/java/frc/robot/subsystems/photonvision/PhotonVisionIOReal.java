@@ -25,17 +25,24 @@ public class PhotonVisionIOReal implements PhotonVisionIO {
 
     @Override
     public void updateInputs(PhotonVisionIOInputs inputs) {
-        // Get the latest result (regardless of read status to avoid flashing)
-        PhotonPipelineResult result = camera.getLatestResult();
+        // Get the latest result for consistent hasTargets status
+        PhotonPipelineResult latestResult = camera.getLatestResult();
+        
+        // Check if we have fresh data by getting unread results
+        List<PhotonPipelineResult> freshResults = camera.getAllUnreadResults();
+        boolean hasFreshData = !freshResults.isEmpty();
+        
+        // Use latest result for consistent status, but track freshness separately
+        PhotonPipelineResult result = latestResult;
         
         // Basic connection info
         inputs.connected = camera.isConnected();
         inputs.name = camera.getName();
         inputs.id = id;
+        inputs.hasFreshData = hasFreshData;
         
-        // Process the result
+        // Process the result (always process latest result to avoid hasTargets flashing)
         if (result != null) {
-            
             inputs.hasTargets = result.hasTargets();
             inputs.latencyMs = 0; // Latency method not available in this PhotonVision version
             inputs.timestampMs = (long) (result.getTimestampSeconds() * 1000);
@@ -139,6 +146,7 @@ public class PhotonVisionIOReal implements PhotonVisionIO {
         } else {
             // Camera not returning results (likely disconnected or serious error)
             inputs.hasTargets = false;
+            inputs.hasFreshData = false;
             inputs.targetCount = 0;
             inputs.latencyMs = 0;
             inputs.timestampMs = System.currentTimeMillis();
@@ -158,6 +166,10 @@ public class PhotonVisionIOReal implements PhotonVisionIO {
             Logger.recordOutput("PhotonVision/Camera" + id + "/NoResults", true);
             System.out.println("Warning: PhotonVision Camera " + id + " returned null result - possible connection issue");
         }
+        
+        // Log freshness status
+        Logger.recordOutput("PhotonVision/Camera" + id + "/HasFreshData", hasFreshData);
+        Logger.recordOutput("PhotonVision/Camera" + id + "/FreshResultCount", freshResults.size());
     }
 
     @Override

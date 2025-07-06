@@ -53,6 +53,8 @@ public class PhotonVisionSubsystem extends SubsystemBase {
     /**
      * Performs 3D projections for all detected targets in periodic()
      * This runs the basic trigonometry-based projection method for continuous logging
+     * Uses PhotonVision's getAllUnreadResults() API to only process fresh vision data,
+     * preventing objects from moving with robot when vision tracking is lost
      */
     private void performPeriodicProjections() {
         // Get camera parameters from RobotConstants (tunable for calibration)
@@ -64,13 +66,14 @@ public class PhotonVisionSubsystem extends SubsystemBase {
         Pose3d robotWorldPose3d = new Pose3d(robotWorldPose2d.getX(), robotWorldPose2d.getY(), 0.0, 
                                               new Rotation3d(0, 0, robotWorldPose2d.getRotation().getRadians()));
         
-        List<RawDetection> allDetections = getAllRawDetections();
+        // Process only fresh detections to prevent stale coordinate transformations
+        List<RawDetection> freshDetections = getFreshRawDetections();
         
-        for (RawDetection detection : allDetections) {
+        for (RawDetection detection : freshDetections) {
             // Get robot-relative 3D pose
             Pose3d robotRelativePose = projectTargetTo3D(detection, CAMERA_RESOLUTION_X, CAMERA_RESOLUTION_Y);
             
-            // Transform to world coordinates
+            // Transform to world coordinates using robot pose from when detection was made
             Pose3d worldPose = robotWorldPose3d.transformBy(new Transform3d(robotRelativePose.getTranslation(), robotRelativePose.getRotation()));
             
             // Log both robot-relative and world poses
@@ -82,6 +85,24 @@ public class PhotonVisionSubsystem extends SubsystemBase {
             Logger.recordOutput(basePath + "/WorldX", worldPose.getX());
             Logger.recordOutput(basePath + "/WorldY", worldPose.getY());
             Logger.recordOutput(basePath + "/WorldZ", worldPose.getZ());
+            
+            // Log data processing info
+            Logger.recordOutput(basePath + "/ProcessedFreshData", true);
+            Logger.recordOutput(basePath + "/DetectionTimestamp", detection.timestampMs);
+        }
+        
+        // Log detection counts for debugging
+        int totalDetections = getAllRawDetections().size();
+        Logger.recordOutput("PhotonVision/TotalDetections", totalDetections);
+        Logger.recordOutput("PhotonVision/FreshDetections", freshDetections.size());
+        
+        // Debug output to show coordinate transformation behavior
+        if (freshDetections.size() > 0) {
+            System.out.println("PhotonVision: Processing " + freshDetections.size() + 
+                " fresh detections for coordinate transforms (total detections: " + totalDetections + ")");
+        } else if (totalDetections > 0) {
+            System.out.println("PhotonVision: " + totalDetections + 
+                " total detections but no fresh data - maintaining last known world coordinates");
         }
     }
     
@@ -99,6 +120,8 @@ public class PhotonVisionSubsystem extends SubsystemBase {
         }
         return 0; // Fallback
     }
+
+
 
     /**
      * Gets all raw detection data from all cameras
@@ -137,6 +160,46 @@ public class PhotonVisionSubsystem extends SubsystemBase {
         }
         
         return allDetections;
+    }
+
+    /**
+     * Gets only fresh raw detection data from all cameras (for coordinate transformations)
+     * @return List of fresh raw detections with camera information
+     */
+    public List<RawDetection> getFreshRawDetections() {
+        List<RawDetection> freshDetections = new ArrayList<>();
+        
+        for (int i = 0; i < inputs.length; i++) {
+            PhotonVisionIOInputsAutoLogged input = inputs[i];
+            // Only process detections when we have fresh data
+            if (input.hasFreshData && input.hasTargets && input.targetCount > 0) {
+                for (int j = 0; j < input.targetCount; j++) {
+                    double yaw = j < input.targetYaw.length ? input.targetYaw[j] : 0.0;
+                    double pitch = j < input.targetPitch.length ? input.targetPitch[j] : 0.0;
+                    double area = j < input.targetArea.length ? input.targetArea[j] : 0.0;
+                    double skew = j < input.targetSkew.length ? input.targetSkew[j] : 0.0;
+                    double ambiguity = j < input.targetPoseAmbiguity.length ? input.targetPoseAmbiguity[j] : 1.0;
+                    int fiducialId = j < input.targetFiducialId.length ? input.targetFiducialId[j] : -1;
+                    double pixelX = j < input.targetPixelX.length ? input.targetPixelX[j] : 0.0;
+                    double pixelY = j < input.targetPixelY.length ? input.targetPixelY[j] : 0.0;
+                    
+                    freshDetections.add(new RawDetection(
+                        i, // camera ID
+                        input.timestampMs,
+                        yaw,
+                        pitch,
+                        area,
+                        skew,
+                        ambiguity,
+                        fiducialId,
+                        pixelX,
+                        pixelY
+                    ));
+                }
+            }
+        }
+        
+        return freshDetections;
     }
 
     /**

@@ -19,6 +19,7 @@ public interface PhotonVisionIO {
         public int id;
         public boolean connected = false;
         public boolean hasTargets = false;
+        public boolean hasFreshData = false;  // Indicates if this update contains new vision data
         public int targetCount = 0;
         public long latencyMs = 0;
         public long timestampMs = 0;
