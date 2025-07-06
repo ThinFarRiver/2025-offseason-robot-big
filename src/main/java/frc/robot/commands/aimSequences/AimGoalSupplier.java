@@ -19,6 +19,17 @@ import org.littletonrobotics.junction.Logger;
 import java.util.List;
 
 public class AimGoalSupplier {
+    @NTParameter(tableName = "Params/aimparam")
+    private static class AimParams {
+        static final double MaxDistanceReefLineup = 1.0;
+        static final double RobotToPipeMeters = 0.5;
+        static final double RobotToAlgaeMeters = 0.4;
+        static final double AlgaeToTagMeters = 0.2;
+        static final double HexagonDangerZoneOffset = 0.3;
+        static final double HexagonDangerDegrees = 45.0;
+        static final double EdgeCaseMaxDelta = 0.2;
+    }
+
     private record TagCondition(int tagA, int tagB, char axis, int positiveResult, int negativeResult) {
     }
 
@@ -41,8 +52,8 @@ public class AimGoalSupplier {
         double shiftYT = MathUtil.clamp(yDistance <= 0.2 ? 0.0 : -offset.getX() / Reef.faceLength, 0.0, 1.0);
         goal = goal.transformBy(
                 new Transform2d(
-                        shiftXT * RobotConstants.ReefAimConstants.MAX_DISTANCE_REEF_LINEUP.get(),
-                        Math.copySign(shiftYT * RobotConstants.ReefAimConstants.MAX_DISTANCE_REEF_LINEUP.get() * 0.8, offset.getY()),
+                        shiftXT * AimParamsNT.MaxDistanceReefLineup.getValue(),
+                        Math.copySign(shiftYT * AimParamsNT.MaxDistanceReefLineup.getValue() * 0.8, offset.getY()),
                         new Rotation2d()));
 
         return goal;
@@ -58,7 +69,7 @@ public class AimGoalSupplier {
     public static Pose2d getFinalCoralTarget(Pose2d goal, boolean rightReef) {
         goal = goal.transformBy(new Transform2d(
                 new Translation2d(
-                        RobotConstants.ReefAimConstants.ROBOT_TO_PIPE_METERS.get(),
+                        AimParamsNT.RobotToPipeMeters.getValue(),
                         RobotConstants.ReefAimConstants.PIPE_TO_TAG.magnitude() * (rightReef ? 1 : -1)),
                 new Rotation2d()));
         return goal;
