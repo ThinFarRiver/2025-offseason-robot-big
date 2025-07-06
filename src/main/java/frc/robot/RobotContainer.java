@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.aimSequences.AimGoalSupplier;
+import frc.robot.commands.aimSequences.ChaseCoralCommand;
 import frc.robot.commands.aimSequences.ReefAimCommand;
 import frc.robot.commands.aimSequences.SuperCycleCommand;
 import frc.robot.subsystems.beambreak.BeambreakIO;
@@ -34,6 +35,9 @@ import frc.robot.subsystems.indicator.IndicatorSubsystem;
 import frc.robot.subsystems.limelight.LimelightIOReal;
 import frc.robot.subsystems.limelight.LimelightIOReplay;
 import frc.robot.subsystems.limelight.LimelightSubsystem;
+import frc.robot.subsystems.photonvision.PhotonVisionIOReal;
+import frc.robot.subsystems.photonvision.PhotonVisionIOSim;
+import frc.robot.subsystems.photonvision.PhotonVisionSubsystem;
 import frc.robot.subsystems.questnav.QuestNavSubsystem;
 import frc.robot.subsystems.roller.RollerIO;
 import frc.robot.subsystems.roller.RollerIOReal;
@@ -95,6 +99,7 @@ public class RobotContainer {
   private EndEffectorArmSubsystem endEffectorArmSubsystem;
   private Superstructure superstructure;
   private QuestNavSubsystem questNavSubsystem;
+  private PhotonVisionSubsystem photonVisionSubsystem;
   private RobotStateRecorder robotStateRecorder = RobotStateRecorder.getInstance(); // NOTE: better to init beforehead
   private double lastResetTime = 0.0;
 
@@ -154,7 +159,7 @@ public class RobotContainer {
           put(LIMELIGHT_RIGHT, new LimelightIOReal(LIMELIGHT_RIGHT));
         }});
 //        questNavSubsystem = new QuestNavSubsystem(new QuestNavIOReal());
-        
+        photonVisionSubsystem = new PhotonVisionSubsystem(new PhotonVisionIOReal(0));
       } else {
         // Simulation initialization
         swerve = new Swerve(
@@ -194,7 +199,7 @@ public class RobotContainer {
             new BeambreakIOSim(RobotConstants.BeamBreakConstants.ENDEFFECTORARM_ALGAE_BEAMBREAK_ID)
         );
 //        questNavSubsystem = new QuestNavSubsystem(new QuestNavIOSim());
-
+        photonVisionSubsystem = new PhotonVisionSubsystem(new PhotonVisionIOSim(0));
       }
     }
 
@@ -308,13 +313,16 @@ public class RobotContainer {
         );
 
     driverController.b().whileTrue(superstructure.runGoal(() -> SuperstructureState.CORAL_OUTTAKE));
+//    driverController.x().whileTrue(
+//        Commands.runOnce(() -> {
+//              destinationSupplier.setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING);
+//            })
+//            .andThen(
+//                new ReefAimCommand(swerve, indicatorSubsystem)
+//            )
+//    );
     driverController.x().whileTrue(
-        Commands.runOnce(() -> {
-              destinationSupplier.setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING);
-            })
-            .andThen(
-                new ReefAimCommand(swerve, indicatorSubsystem)
-            )
+        new ChaseCoralCommand(swerve, photonVisionSubsystem)
     );
 
     // Left trigger binding - only executes if there is coral

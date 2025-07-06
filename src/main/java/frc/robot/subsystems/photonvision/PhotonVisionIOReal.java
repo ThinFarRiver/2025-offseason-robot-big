@@ -27,7 +27,7 @@ public class PhotonVisionIOReal implements PhotonVisionIO {
     @Override
     public void updateInputs(PhotonVisionIOInputs inputs) {
         // Get all unread results (non-deprecated method)
-        List<PhotonPipelineResult> results = camera.getAllUnreadResults();
+        List<PhotonPipelineResult> results = List.of(camera.getLatestResult());
         
         // Basic connection info
         inputs.connected = camera.isConnected();
