@@ -173,8 +173,12 @@ public class CoralIntakeAssistCommand extends Command {
         // Get robot and coral positions
         Pose2d robotPose = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
         Pose3d coralPose3d = photonVision.projectTargetTo3D(bestCoral);
-        Pose2d coralPose2d = coralPose3d.toPose2d();
-        Translation2d coralPosition = robotPose.transformBy(new Transform2d(coralPose2d.getTranslation(), coralPose2d.getRotation())).getTranslation();
+        
+        // Convert robot-relative coral position to world coordinates
+        Translation2d coralRelative = coralPose3d.toPose2d().getTranslation();
+        Translation2d coralPosition = robotPose.getTranslation().plus(
+            coralRelative.rotateBy(robotPose.getRotation())
+        );
         
         // Only assist if moving towards coral
         Translation2d robotToCoralVector = coralPosition.minus(robotPose.getTranslation());
@@ -184,6 +188,12 @@ public class CoralIntakeAssistCommand extends Command {
                            robotVelocityVector.getY() * robotToCoralVector.getY();
         
         boolean movingTowardsCoral = dotProduct > 0;
+        
+        // Add more detailed logging for debugging
+        Logger.recordOutput("CoralIntakeAssist/RobotToCoralVector", robotToCoralVector);
+        Logger.recordOutput("CoralIntakeAssist/RobotVelocityVector", robotVelocityVector);
+        Logger.recordOutput("CoralIntakeAssist/DotProduct", dotProduct);
+        Logger.recordOutput("CoralIntakeAssist/MovingTowardsCoral", movingTowardsCoral);
         if (!movingTowardsCoral) {
             Logger.recordOutput("CoralIntakeAssist/IsActive", false);
             Logger.recordOutput("CoralIntakeAssist/Reason", "Not moving towards coral");
@@ -257,6 +267,7 @@ public class CoralIntakeAssistCommand extends Command {
     
     /**
      * Calculates the direction perpendicular to robot velocity towards the coral
+     * Simplified approach: directly calculate the perpendicular component of robot-to-coral vector
      */
     private Translation2d calculatePerpendicularDirection(Translation2d robotVel, Translation2d robotPos, Translation2d coralPos) {
         if (robotVel.getNorm() < 0.01) {
@@ -268,15 +279,16 @@ public class CoralIntakeAssistCommand extends Command {
         Translation2d robotToCoral = coralPos.minus(robotPos);
         Translation2d velUnit = robotVel.div(robotVel.getNorm());
         
-        // Get perpendicular direction (rotate velocity 90 degrees)
-        Translation2d perpRight = new Translation2d(velUnit.getY(), -velUnit.getX());
-        Translation2d perpLeft = new Translation2d(-velUnit.getY(), velUnit.getX());
+        // Project robot-to-coral onto velocity direction
+        double parallelComponent = robotToCoral.getX() * velUnit.getX() + robotToCoral.getY() * velUnit.getY();
+        Translation2d parallelVector = velUnit.times(parallelComponent);
         
-        // Choose direction that points towards coral
-        double dotRight = perpRight.getX() * robotToCoral.getX() + perpRight.getY() * robotToCoral.getY();
-        double dotLeft = perpLeft.getX() * robotToCoral.getX() + perpLeft.getY() * robotToCoral.getY();
+        // Perpendicular component points toward coral
+        Translation2d perpVector = robotToCoral.minus(parallelVector);
         
-        return dotRight > dotLeft ? perpRight : perpLeft;
+        // Return unit vector in perpendicular direction
+        double perpNorm = perpVector.getNorm();
+        return perpNorm > 0.01 ? perpVector.div(perpNorm) : new Translation2d();
     }
     
     /**
