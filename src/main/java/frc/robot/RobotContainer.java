@@ -204,7 +204,7 @@ public class RobotContainer {
     // CommandScheduler.getInstance().registerSubsystem(
     // climberSubsystem, swerve
     // );
-    // CommandScheduler.getInstance().unregisterSubsystem(climberSubsystem);
+     CommandScheduler.getInstance().unregisterSubsystem(climberSubsystem);
 
     // configureAutoChooser();
     configureDriverBindings();

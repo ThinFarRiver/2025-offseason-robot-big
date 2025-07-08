@@ -2,7 +2,9 @@ package frc.robot.utils;
 
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import frc.robot.FieldConstants;
 import lib.ntext.NTParameter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class CoralRecorder {
   public List<CoralInfo> coralInfos = new ArrayList<>();
@@ -20,16 +21,18 @@ public class CoralRecorder {
     Iterator<CoralInfo> iterator = coralInfos.iterator();
     while (iterator.hasNext()) {
       CoralInfo info = iterator.next();
-
       // increase time
       info.setAddedTime(info.getAddedTime() + dt);
       // decay confidence
-      info.setConfidence(info.getConfidence() - dt / CoralRecorderParamsNT.confidenceTimeDecay.getValue());
+      info.setConfidence(info.getConfidence() - dt * CoralRecorderParamsNT.confidenceTimeDecay.getValue());
       if (info.getConfidence() <= 0.0) iterator.remove();
     }
   }
 
   public void addCoralMeasurement(Translation2d loc, double dt) {
+    if (loc.getX() < 0.0 || loc.getX() > FieldConstants.fieldLength) return;
+    if (loc.getY() < 0.0 || loc.getY() > FieldConstants.fieldWidth) return;
+
     // find nearest coral
     CoralInfo nearest = null;
     double minDistance = Double.MAX_VALUE;
@@ -43,9 +46,11 @@ public class CoralRecorder {
 
     // if have near coral and within radius, update to current
     if (nearest != null && minDistance <= CoralRecorderParamsNT.sameCoralRadiusMeters.getValue()) {
+      System.out.println("Before: "  + nearest.getConfidence());
       nearest.setConfidence(
-          Math.min(1.0, nearest.getConfidence() + dt / CoralRecorderParamsNT.confidenceTimeObservationGain.getValue())
+          Math.min(1.0, nearest.getConfidence() + dt *  CoralRecorderParamsNT.confidenceTimeObservationGain.getValue())
       );
+      System.out.println("After: "  + nearest.getConfidence());
       nearest.setTranslation(
           nearest.getTranslation().interpolate(loc, CoralRecorderParamsNT.confidenceNewObservationProportion.getValue())
       );
@@ -75,17 +80,16 @@ public class CoralRecorder {
     return Optional.empty();
   }
 
-  public Translation2d[] getCoralLocations() {
+  public Pose2d[] getCoralLocations() {
     double threshold = CoralRecorderParamsNT.confidenceThreshold.getValue();
-    System.out.println(coralInfos.size());
 
     return coralInfos.stream()
         // only include reliable corals
         .filter(info -> info.getConfidence() > threshold)
         // extract their positions
-        .map(CoralInfo::getTranslation)
+        .map(info -> new Pose2d(info.getTranslation(), Rotation2d.kZero))
         // collect into a read-only List
-        .toList().toArray(new Translation2d[0]);
+        .toList().toArray(new Pose2d[0]);
   }
 
   public void reset() {
@@ -103,11 +107,11 @@ public class CoralRecorder {
 
   @NTParameter(tableName = "Params/CoralRecorder")
   public static class CoralRecorderParams {
-    static final double sameCoralRadiusMeters = 0.25;
+    static final double sameCoralRadiusMeters = 0.35;
     static final double confidenceStart = 0.3;
     static final double confidenceTimeDecay = 0.7; // decay in confidence per second
-    static final double confidenceTimeObservationGain = 2.0; // increase in confidence per second when observed
-    static final double confidenceNewObservationProportion = 0.3; // starting confidence for a new observation
-    static final double confidenceThreshold = 0.6;
+    static final double confidenceTimeObservationGain = 5.0; // increase in confidence per second when observed
+    static final double confidenceNewObservationProportion = 0.2; // starting confidence for a new observation
+    static final double confidenceThreshold = 0.5;
   }
 }

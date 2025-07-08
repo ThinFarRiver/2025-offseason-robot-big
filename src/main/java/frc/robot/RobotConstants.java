@@ -512,17 +512,17 @@ public final class RobotConstants {
         @NTParameter(tableName = "Params" + "/" + kPhotonVisionTag)
         public final static class PhotonVisionParams {
             // Camera physical configuration
-            public static final double CAMERA_HEIGHT_METERS = 0.75;
-            public static final double CAMERA_PITCH_DEGREES = -25.0;
+            public static final double CAMERA_HEIGHT_METERS = 1.0;
+            public static final double CAMERA_PITCH_DEGREES = -30.0;
             
             // Camera field of view (FOV)
-            public static final double CAMERA_HORIZONTAL_FOV_DEGREES = 70.0;
-            public static final double CAMERA_VERTICAL_FOV_DEGREES = 43.0;
+            public static final double CAMERA_HORIZONTAL_FOV_DEGREES = 65.93;
+            public static final double CAMERA_VERTICAL_FOV_DEGREES = 51.89;
             
             // Camera to robot transform (camera position relative to robot center)
             public static final double CAMERA_TO_ROBOT_X = 0.14;  // 0.14m front
             public static final double CAMERA_TO_ROBOT_Y = 0.0;   // 0.00m left
-            public static final double CAMERA_TO_ROBOT_Z = 0.75;  // 0.75m up
+            public static final double CAMERA_TO_ROBOT_Z = 1.0;  // 0.10m up
             public static final double CAMERA_TO_ROBOT_ROTATION_DEGREES = 0.0;
             
             // Distance estimation parameters
