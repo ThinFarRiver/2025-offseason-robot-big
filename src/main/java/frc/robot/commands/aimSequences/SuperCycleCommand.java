@@ -14,6 +14,8 @@ import lib.ironpulse.swerve.Swerve;
 
 import java.util.function.BooleanSupplier;
 
+import static frc.robot.commands.aimSequences.AimGoalSupplier.isInHexagonalReefDangerZone;
+
 public class SuperCycleCommand extends SequentialCommandGroup {
   private final Swerve swerve;
   private final Superstructure superstructure;
@@ -73,7 +75,8 @@ public class SuperCycleCommand extends SequentialCommandGroup {
   }
 
   private Command takeAlgae() {
-    return Commands.runOnce(() -> DestinationSupplier.getInstance().setCurrentGamePiece(DestinationSupplier.GamePiece.ALGAE_INTAKING))
+    var destinationSupplier = DestinationSupplier.getInstance();
+    return Commands.runOnce(() -> destinationSupplier.setCurrentGamePiece(DestinationSupplier.GamePiece.ALGAE_INTAKING))
         .andThen(Commands.parallel(
                 // move to the correct position
                 new ReefAimCommand(swerve, indicatorSubsystem),
@@ -83,6 +86,11 @@ public class SuperCycleCommand extends SequentialCommandGroup {
                         .getInstance()
                         .getPreState())
                     .until(superstructure::hasAlgae)
+            ).finallyDo(
+              () -> superstructure
+                .runGoal(destinationSupplier::getPreState)
+                .until(() -> !isInHexagonalReefDangerZone(RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d()))
+                  .schedule()
             )
         );
   }
