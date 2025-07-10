@@ -210,6 +210,8 @@ public class CoralIntakeAssistCommand extends Command {
             return new Translation2d();
         }
         
+        Logger.recordOutput("CoralIntakeAssist/robotWorldPose", robotWorldPose);
+        Logger.recordOutput("CoralIntakeAssist/robotWorldVelocity", robotWorldVelocityVector);
         // Calculate assist velocity in world frame
         Translation2d assistVelocityWorld = calculateAssistVelocityWorld(
             robotWorldPose.getTranslation(), 
