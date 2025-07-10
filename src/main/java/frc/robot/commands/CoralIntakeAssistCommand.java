@@ -27,22 +27,21 @@ import static lib.ironpulse.math.MathTools.epsilonEquals;
 /**
  * Coral Intake Assist Drive Command
  * 
- * A drive command that provides normal joystick driving PLUS coral intake assist.
- * This command should replace the default swerve drive command when intaking.
- * Uses CoralRecorder to track coral positions consistently over time.
+ * Provides normal joystick driving with intelligent coral intake assistance.
+ * This command should replace the default swerve drive command when intaking corals.
  * 
  * Features:
- * - Normal joystick-based driving with all the same features as the default command
- * - Coral intake assist that adds perpendicular velocity toward the most aligned coral
- * - Assist only activates when moving toward the most aligned coral within angle threshold
- * - All calculations done in world frame for consistency
+ * - Normal joystick-based driving with standard deadband and input curves
+ * - Coral intake assist that adds perpendicular velocity toward aligned corals
+ * - Assist only activates when moving toward coral within configurable angle threshold
+ * - Uses CoralRecorder to track coral positions consistently over time
  * 
- * Assist calculation:
- * - Uses CoralRecorder's most aligned coral target
- * - Checks if robot velocity angle to coral is within configurable threshold
- * - Calculates perpendicular distance from robot trajectory to coral in world frame
- * - Applies proportional control: assist_vel = |robot_to_coral_perp_to_vel| * kP
- * - Converts final result to chassis speeds for swerve
+ * How it works:
+ * 1. Gets most aligned coral from CoralRecorder
+ * 2. Checks if driver input direction is within angle threshold of coral
+ * 3. Calculates perpendicular distance from trajectory to coral  
+ * 4. Applies proportional assist velocity perpendicular to driver input
+ * 5. Combines driver input + assist for final robot movement
  */
 public class CoralIntakeAssistCommand extends Command {
     private final Swerve swerve;
@@ -67,6 +66,7 @@ public class CoralIntakeAssistCommand extends Command {
             Supplier<Pose3d> poseDriveRobotSupplier,
             LinearVelocity translationDeadband,
             AngularVelocity rotationDeadband) {
+        
         this.swerve = swerve;
         this.xSupplier = xSupplier;
         this.ySupplier = ySupplier;
@@ -75,9 +75,9 @@ public class CoralIntakeAssistCommand extends Command {
         this.translationDeadband = translationDeadband;
         this.rotationDeadband = rotationDeadband;
         
-        // Use standard joystick curves
-        this.translationJoystickCurve = (x) -> x; // Linear
-        this.rotationJoystickCurve = (x) -> x * x * Math.signum(x); // Quadratic
+        // Standard joystick input curves
+        this.translationJoystickCurve = x -> x; // Linear for translation
+        this.rotationJoystickCurve = x -> x * x * Math.signum(x); // Quadratic for rotation
         
         addRequirements(swerve);
     }
@@ -89,53 +89,59 @@ public class CoralIntakeAssistCommand extends Command {
     
     @Override
     public void execute() {
-        // Step 1: Process normal joystick input (copied from SwerveCommands.driveWithJoystick)
-        SwerveLimit swerveLimit = swerve.getSwerveLimit();
+        // Step 1: Process driver joystick input
+        ChassisSpeeds baseChassisSpeeds = calculateBaseChassisSpeedsFromJoystick();
 
-        // Read from joystick
-        double x = translationJoystickCurve.apply(xSupplier.getAsDouble());
-        double y = translationJoystickCurve.apply(ySupplier.getAsDouble());
-        double z = rotationJoystickCurve.apply(zSupplier.getAsDouble());
-
-        // Compute linear velocity
-        double vNorm = MathUtil.applyDeadband(
-                Math.hypot(x, y) * swerveLimit.maxLinearVelocity().in(MetersPerSecond),
-                translationDeadband.in(MetersPerSecond)
-        );
-        Rotation2d vDir = epsilonEquals(vNorm, 0.0) ? Rotation2d.kZero : new Rotation2d(x, y);
-        Translation2d v = new Translation2d(vNorm, vDir);
-
-        // Compute angular velocity
-        double omegaNorm = MathUtil.applyDeadband(
-                Math.abs(z) * swerveLimit.maxAngularVelocity().in(RadiansPerSecond),
-                rotationDeadband.in(RadiansPerSecond)
-        );
-        double omegaDir = Math.signum(z);
-        AngularVelocity omega = RadiansPerSecond.of(omegaNorm * omegaDir);
-
-        // Compose to chassis speeds - base driver input
-        ChassisSpeeds baseChassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-                v.getX(), v.getY(), omega.in(RadiansPerSecond),
-                poseDriveRobotSupplier.get().getRotation().toRotation2d()
-        );
-
-        // Step 2: Calculate coral assist (if applicable)
+        // Step 2: Calculate coral intake assist
         Translation2d assistVelocity = calculateCoralAssist(baseChassisSpeeds);
         
-        // Step 3: Combine base movement with assist
+        // Step 3: Combine driver input with assist
         ChassisSpeeds finalChassisSpeeds = new ChassisSpeeds(
                 baseChassisSpeeds.vxMetersPerSecond + assistVelocity.getX(),
                 baseChassisSpeeds.vyMetersPerSecond + assistVelocity.getY(),
                 baseChassisSpeeds.omegaRadiansPerSecond
         );
 
-        // Apply the combined speeds
+        // Apply combined movement to swerve drive
         swerve.runTwist(finalChassisSpeeds);
         
-        // Logging
-        Logger.recordOutput("CoralIntakeAssist/BaseSpeed",  baseChassisSpeeds);
-        Logger.recordOutput("CoralIntakeAssist/finalSpeed", finalChassisSpeeds);
+        // Log speeds for debugging
+        Logger.recordOutput("CoralIntakeAssist/BaseSpeed", baseChassisSpeeds);
+        Logger.recordOutput("CoralIntakeAssist/FinalSpeed", finalChassisSpeeds);
         Logger.recordOutput("CoralIntakeAssist/AssistVel", assistVelocity);
+    }
+    
+    /**
+     * Calculates base chassis speeds from joystick input using standard drive logic.
+     */
+    private ChassisSpeeds calculateBaseChassisSpeedsFromJoystick() {
+        SwerveLimit swerveLimit = swerve.getSwerveLimit();
+
+        // Apply input curves to joystick values
+        double x = translationJoystickCurve.apply(xSupplier.getAsDouble());
+        double y = translationJoystickCurve.apply(ySupplier.getAsDouble());
+        double z = rotationJoystickCurve.apply(zSupplier.getAsDouble());
+
+        // Calculate linear velocity with deadband
+        double vNorm = MathUtil.applyDeadband(
+                Math.hypot(x, y) * swerveLimit.maxLinearVelocity().in(MetersPerSecond),
+                translationDeadband.in(MetersPerSecond)
+        );
+        Rotation2d vDir = epsilonEquals(vNorm, 0.0) ? Rotation2d.kZero : new Rotation2d(x, y);
+        Translation2d velocity = new Translation2d(vNorm, vDir);
+
+        // Calculate angular velocity with deadband
+        double omegaNorm = MathUtil.applyDeadband(
+                Math.abs(z) * swerveLimit.maxAngularVelocity().in(RadiansPerSecond),
+                rotationDeadband.in(RadiansPerSecond)
+        );
+        AngularVelocity omega = RadiansPerSecond.of(omegaNorm * Math.signum(z));
+
+        // Convert to field-relative chassis speeds
+        return ChassisSpeeds.fromFieldRelativeSpeeds(
+                velocity.getX(), velocity.getY(), omega.in(RadiansPerSecond),
+                poseDriveRobotSupplier.get().getRotation().toRotation2d()
+        );
     }
     
     @Override
@@ -150,164 +156,144 @@ public class CoralIntakeAssistCommand extends Command {
     }
     
     /**
+     * Calculates coral assist velocity to add to base driver input.
+     * Uses CoralRecorder to get the most aligned coral target and calculates assist in world frame.
      * 
-     * Calculates coral assist velocity to add to base driver input
-     * Uses CoralRecorder to get the most aligned coral target and calculates assist in world frame
      * @param baseChassisSpeeds The chassis speeds from driver input
-     * @return Translation2d assist velocity to add in world frame (x, y in meters/second)
+     * @return Translation2d assist velocity to add in robot frame (x, y in meters/second)
      */
     private Translation2d calculateCoralAssist(ChassisSpeeds baseChassisSpeeds) {
-        // Get robot pose in world frame
-        Pose2d robotWorldPose = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
+        // Get robot state
+        Pose2d robotPose = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
+        Translation2d driverVelocityRobotFrame = new Translation2d(baseChassisSpeeds.vxMetersPerSecond, baseChassisSpeeds.vyMetersPerSecond);
+        Translation2d driverVelocityWorldFrame = driverVelocityRobotFrame.rotateBy(robotPose.getRotation());
         
-        // Use base chassis speeds (driver input) and convert to world frame
-        Translation2d driverInputRobotFrame = new Translation2d(baseChassisSpeeds.vxMetersPerSecond, baseChassisSpeeds.vyMetersPerSecond);
-        Translation2d driverInputVelocity = driverInputRobotFrame.rotateBy(robotWorldPose.getRotation());
-        
-        // Get the most aligned coral from CoralRecorder
-        Optional<CoralRecorder.CoralInfo> mostAlignedCoralOpt = getMostAlignedCoral(robotWorldPose);
-        if (mostAlignedCoralOpt.isEmpty()) {
+        // Check if coral is available
+        Optional<CoralRecorder.CoralInfo> coralOpt = getMostAlignedCoral(robotPose);
+        if (coralOpt.isEmpty()) {
+            logInactiveAssist("No coral detected", 0.0);
             return new Translation2d();
         }
         
-        CoralRecorder.CoralInfo mostAlignedCoral = mostAlignedCoralOpt.get();
-        Translation2d coralWorldPosition = mostAlignedCoral.getTranslation();
+        Translation2d coralPosition = coralOpt.get().getTranslation();
         
-        // Only assist if driver is commanding movement
-        double driverSpeed = driverInputVelocity.getNorm();
+        // Check minimum speed requirement
+        double driverSpeed = driverVelocityWorldFrame.getNorm();
         if (driverSpeed < CoralIntakeAssistParamsNT.minRobotSpeed.getValue()) {
-            Logger.recordOutput("CoralIntakeAssist/IsActive", false);
-            Logger.recordOutput("CoralIntakeAssist/Reason", "Driver not commanding movement");
-            Logger.recordOutput("CoralIntakeAssist/DriverSpeed", driverSpeed);
+            logInactiveAssist("Driver speed too low", driverSpeed);
             return new Translation2d();
         }
         
-        // Check if moving towards the most aligned coral within angle threshold
-        Translation2d robotToCoralVector = coralWorldPosition.minus(robotWorldPose.getTranslation());
-        double dotProduct = driverInputVelocity.getX() * robotToCoralVector.getX() + 
-                           driverInputVelocity.getY() * robotToCoralVector.getY();
+        // Check if moving toward coral within angle threshold
+        Translation2d robotToCoral = coralPosition.minus(robotPose.getTranslation());
+        double angleToCoralDegrees = calculateAngleBetweenVectors(driverVelocityWorldFrame, robotToCoral);
         
-        // Calculate actual angle between driver input and robot-to-coral vector
-        double velocityMagnitude = driverInputVelocity.getNorm();
-        double robotToCoralMagnitude = robotToCoralVector.getNorm();
-        double actualAngleDegrees = 0.0;
-        boolean movingTowardsCoral = false;
-        
-        if (velocityMagnitude > 0.01 && robotToCoralMagnitude > 0.01) {
-            double cosAngle = MathUtil.clamp(dotProduct / (velocityMagnitude * robotToCoralMagnitude), -1.0, 1.0);
-            actualAngleDegrees = Math.toDegrees(Math.acos(cosAngle));
-            
-            // Check if angle is within threshold - FIXED: angle must be LESS than threshold
-            movingTowardsCoral = actualAngleDegrees <= CoralIntakeAssistParamsNT.maxAngleTowardsCoralDegrees.getValue();
-        }
-        
-        // Detailed logging for debugging
-        Logger.recordOutput("CoralIntakeAssist/CoralWorldPosition", coralWorldPosition);
-        Logger.recordOutput("CoralIntakeAssist/AngleToCoralDegrees", actualAngleDegrees);
-        Logger.recordOutput("CoralIntakeAssist/AngleThreshold", CoralIntakeAssistParamsNT.maxAngleTowardsCoralDegrees.getValue());
-        Logger.recordOutput("CoralIntakeAssist/MovingTowardsCoral", movingTowardsCoral);
-        Logger.recordOutput("CoralIntakeAssist/DotProduct", dotProduct);
-        
-        if (!movingTowardsCoral) {
-            Logger.recordOutput("CoralIntakeAssist/IsActive", false);
-            Logger.recordOutput("CoralIntakeAssist/Reason", "Not moving towards coral (angle: " + String.format("%.1f", actualAngleDegrees) + "°)");
+        if (angleToCoralDegrees > CoralIntakeAssistParamsNT.maxAngleTowardsCoralDegrees.getValue()) {
+            logInactiveAssist("Not moving towards coral (angle: " + String.format("%.1f", angleToCoralDegrees) + "°)", driverSpeed);
             return new Translation2d();
         }
         
-        Logger.recordOutput("CoralIntakeAssist/robotWorldPose", robotWorldPose);
-        Logger.recordOutput("CoralIntakeAssist/driverInputVelocity", driverInputVelocity);
-        // Calculate assist velocity in world frame
-        Translation2d assistVelocityWorld = calculateAssistVelocityWorld(
-            robotWorldPose.getTranslation(), 
-            driverInputVelocity, 
-            coralWorldPosition
-        );
+        // Calculate and apply assist
+        Translation2d assistWorldFrame = calculateAssistVelocityWorld(robotPose.getTranslation(), driverVelocityWorldFrame, coralPosition);
+        Translation2d assistClamped = clampAssistVelocity(assistWorldFrame);
+        Translation2d assistRobotFrame = assistClamped.rotateBy(robotPose.getRotation().unaryMinus());
         
-        // Apply limits
-        double assistX = MathUtil.clamp(assistVelocityWorld.getX(), 
-            -CoralIntakeAssistParamsNT.maxAssistVelocity.getValue(), 
-            CoralIntakeAssistParamsNT.maxAssistVelocity.getValue());
-        double assistY = MathUtil.clamp(assistVelocityWorld.getY(), 
-            -CoralIntakeAssistParamsNT.maxAssistVelocity.getValue(), 
-            CoralIntakeAssistParamsNT.maxAssistVelocity.getValue());
-        
-        Translation2d finalAssistWorld = new Translation2d(assistX, assistY);
-        
-        // Convert world frame assist velocity to robot frame for chassis speeds
-        Translation2d assistRobotFrame = finalAssistWorld.rotateBy(robotWorldPose.getRotation().unaryMinus());
-        
-        // Additional logging
-        Logger.recordOutput("CoralIntakeAssist/IsActive", true);
-        Logger.recordOutput("CoralIntakeAssist/CoralDistance", robotToCoralVector.getNorm());
-        Logger.recordOutput("CoralIntakeAssist/PerpendicularDistance", 
-            calculatePerpendicularDistance(robotWorldPose.getTranslation(), driverInputVelocity, coralWorldPosition));
-        Logger.recordOutput("CoralIntakeAssist/DriverSpeed", driverSpeed);
-        Logger.recordOutput("CoralIntakeAssist/AssistWorldFrame", finalAssistWorld);
-        Logger.recordOutput("CoralIntakeAssist/AssistRobotFrame", assistRobotFrame);
-        
+        // Log active assist
+        logActiveAssist(robotPose, driverVelocityWorldFrame, coralPosition, robotToCoral, angleToCoralDegrees, driverSpeed, assistClamped, assistRobotFrame);
         
         return assistRobotFrame;
     }
+    
+    /**
+     * Calculates the angle between two vectors in degrees.
+     */
+    private double calculateAngleBetweenVectors(Translation2d vector1, Translation2d vector2) {
+        double magnitude1 = vector1.getNorm();
+        double magnitude2 = vector2.getNorm();
+        
+        if (magnitude1 < 0.01 || magnitude2 < 0.01) {
+            return 180.0; // Return large angle if either vector is too small
+        }
+        
+        double dotProduct = vector1.getX() * vector2.getX() + vector1.getY() * vector2.getY();
+        double cosAngle = MathUtil.clamp(dotProduct / (magnitude1 * magnitude2), -1.0, 1.0);
+        return Math.toDegrees(Math.acos(cosAngle));
+    }
+    
+    /**
+     * Clamps the assist velocity to maximum allowed values.
+     */
+    private Translation2d clampAssistVelocity(Translation2d assistVelocity) {
+        double maxVel = CoralIntakeAssistParamsNT.maxAssistVelocity.getValue();
+        double assistX = MathUtil.clamp(assistVelocity.getX(), -maxVel, maxVel);
+        double assistY = MathUtil.clamp(assistVelocity.getY(), -maxVel, maxVel);
+        return new Translation2d(assistX, assistY);
+    }
+    
+    /**
+     * Logs when assist is inactive with reason.
+     */
+    private void logInactiveAssist(String reason, double driverSpeed) {
+        Logger.recordOutput("CoralIntakeAssist/IsActive", false);
+        Logger.recordOutput("CoralIntakeAssist/Reason", reason);
+    }
+    
+    /**
+     * Logs when assist is active with all relevant data.
+     */
+    private void logActiveAssist(Pose2d robotPose, Translation2d driverVelocity, Translation2d coralPosition, 
+                                Translation2d robotToCoral, double angleToCoralDegrees, double driverSpeed,
+                                Translation2d assistWorldFrame, Translation2d assistRobotFrame) {
+        Logger.recordOutput("CoralIntakeAssist/IsActive", true);
+        Logger.recordOutput("CoralIntakeAssist/AngleToCoralDegrees", angleToCoralDegrees);
+        Logger.recordOutput("CoralIntakeAssist/PerpendicularDistance", 
+            calculatePerpendicularDistance(robotPose.getTranslation(), driverVelocity, coralPosition));
+        Logger.recordOutput("CoralIntakeAssist/AssistWorldFrame", assistWorldFrame);
+    }
 
     /**
-     * Gets the most aligned coral from CoralRecorder
-     * @param robotPose Current robot pose in world frame (unused, method uses current pose internally)
-     * @return Optional containing the most aligned coral, or empty if none available
+     * Gets the most aligned coral from CoralRecorder.
      */
     private Optional<CoralRecorder.CoralInfo> getMostAlignedCoral(Pose2d robotPose) {
         return RobotStateRecorder.getMostInDirectionCoral();
     }
     
     /**
-     * Calculates the assist velocity based on perpendicular distance to coral in world frame
-     * Following the 2024 intake assist formula: assist_vel = |robot_to_coral_perp_to_vel| * kP
-     * @param robotPosition Robot position in world frame
-     * @param robotVelocity Robot velocity in world frame
-     * @param coralPosition Coral position in world frame
-     * @return Assist velocity in world frame
+     * Calculates the assist velocity based on perpendicular distance to coral in world frame.
+     * Uses proportional control: assist_velocity = |perpendicular_distance| * kP
      */
     private Translation2d calculateAssistVelocityWorld(Translation2d robotPosition, Translation2d robotVelocity, Translation2d coralPosition) {
-        // Calculate perpendicular distance from robot trajectory to coral
         double perpDistance = calculatePerpendicularDistance(robotPosition, robotVelocity, coralPosition);
-        
-                // Calculate assist magnitude using proportional control
         double assistMagnitude = Math.abs(perpDistance) * CoralIntakeAssistParamsNT.assistKp.getValue();
-        
-        // Calculate direction perpendicular to robot velocity towards coral
         Translation2d perpDirection = calculatePerpendicularDirection(robotVelocity, robotPosition, coralPosition);
-        
         return perpDirection.times(assistMagnitude);
     }
     
     /**
-     * Calculates perpendicular distance from robot trajectory to coral position
+     * Calculates signed perpendicular distance from robot trajectory to coral position.
+     * Positive = coral to left of trajectory, Negative = coral to right of trajectory
      */
     private double calculatePerpendicularDistance(Translation2d robotPos, Translation2d robotVel, Translation2d coralPos) {
-        if (robotVel.getNorm() < 0.01) return 0.0; // Avoid division by zero
+        if (robotVel.getNorm() < 0.01) return 0.0;
         
         Translation2d robotToCoral = coralPos.minus(robotPos);
         Translation2d velUnit = robotVel.div(robotVel.getNorm());
         
         // Project robot-to-coral vector onto velocity direction
         double parallelComponent = robotToCoral.getX() * velUnit.getX() + robotToCoral.getY() * velUnit.getY();
-        Translation2d parallelVector = velUnit.times(parallelComponent);
+        Translation2d perpVector = robotToCoral.minus(velUnit.times(parallelComponent));
         
-        // Perpendicular component is the remainder
-        Translation2d perpVector = robotToCoral.minus(parallelVector);
-        
-        // Use robotToCoral × velUnit to determine which side of trajectory coral is on
-        // Positive = coral to left of trajectory, Negative = coral to right of trajectory
+        // Use cross product to determine sign (left vs right of trajectory)
         double crossProduct = robotToCoral.getX() * velUnit.getY() - robotToCoral.getY() * velUnit.getX();
         return perpVector.getNorm() * Math.signum(crossProduct);
     }
     
     /**
-     * Calculates the direction perpendicular to robot velocity towards the coral
-     * Simplified approach: directly calculate the perpendicular component of robot-to-coral vector
+     * Calculates the unit vector perpendicular to robot velocity pointing towards the coral.
      */
     private Translation2d calculatePerpendicularDirection(Translation2d robotVel, Translation2d robotPos, Translation2d coralPos) {
         if (robotVel.getNorm() < 0.01) {
-            // If not moving, assist directly towards coral
+            // If not moving, point directly towards coral
             Translation2d robotToCoral = coralPos.minus(robotPos);
             return robotToCoral.getNorm() > 0.01 ? robotToCoral.div(robotToCoral.getNorm()) : new Translation2d();
         }
@@ -315,12 +301,9 @@ public class CoralIntakeAssistCommand extends Command {
         Translation2d robotToCoral = coralPos.minus(robotPos);
         Translation2d velUnit = robotVel.div(robotVel.getNorm());
         
-        // Project robot-to-coral onto velocity direction
+        // Calculate perpendicular component of robot-to-coral vector
         double parallelComponent = robotToCoral.getX() * velUnit.getX() + robotToCoral.getY() * velUnit.getY();
-        Translation2d parallelVector = velUnit.times(parallelComponent);
-        
-        // Perpendicular component points toward coral
-        Translation2d perpVector = robotToCoral.minus(parallelVector);
+        Translation2d perpVector = robotToCoral.minus(velUnit.times(parallelComponent));
         
         // Return unit vector in perpendicular direction
         double perpNorm = perpVector.getNorm();
