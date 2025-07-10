@@ -12,6 +12,7 @@ import frc.robot.commands.aimSequences.AimGoalSupplier;
 import frc.robot.subsystems.superstructure.elevator.ElevatorSubsystem;
 import frc.robot.subsystems.superstructure.endeffectorarm.EndEffectorArmSubsystem;
 import frc.robot.subsystems.superstructure.intake.IntakeSubsystem;
+import frc.robot.utils.BlocklessEitherCommand;
 import frc.robot.utils.LoggedTracer;
 import lib.ironpulse.utils.TimeDelayedBoolean;
 import lombok.Builder;
@@ -24,6 +25,7 @@ import org.littletonrobotics.junction.Logger;
 
 import static frc.robot.RobotConstants.ElevatorConstants.FLYBY_HEIGHT;
 import static frc.robot.subsystems.superstructure.SuperstructureState.L4;
+import static frc.robot.subsystems.superstructure.SuperstructureState.NET_SCORE;
 
 import java.util.*;
 import java.util.function.DoubleSupplier;
@@ -535,9 +537,9 @@ public class Superstructure extends SubsystemBase {
                                 .andThen(Commands.waitUntil(elevator::isSafeToFlip)),
                         // usual case: move superstructure then wait until it’s safe to flip
                         runSuperstructurePose(to.getValue().getPose())
-                                .andThen(Commands.waitUntil(elevator::isSafeToFlip)),
+                                .andThen(Commands.waitUntil(elevator::isAtGoal)),
                         // only flyby when we go from BNF -> AF
-                        () -> goal.equals(L4)
+                        () -> goal.equals(L4) || goal.equals(NET_SCORE)
                 );
             }
 

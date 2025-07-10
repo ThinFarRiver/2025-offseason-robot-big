@@ -303,11 +303,14 @@ public class RobotContainer {
                   return AimGoalSupplier.isNearNet(poseWorldRobot);
                 }).andThen(
                     superstructure.runGoal(() -> SuperstructureState.NET_SCORE).until(superstructure::poseAtGoal)
+                ).andThen(
+                  Commands.waitUntil(() -> {
+                    return RobotStateRecorder.getVelocityWorldRobotCurrent().getTranslation().getNorm() < 0.20;
+                  })
                 )
               )
               .andThen(
                 superstructure
-                
                     .runGoal(() -> SuperstructureState.NET_SCORE_EJECT)
                     .until(() -> !superstructure.hasAlgae())),
                 // coral
