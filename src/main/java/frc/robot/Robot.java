@@ -1,5 +1,6 @@
 package frc.robot;
 
+import com.pathplanner.lib.commands.FollowPathCommand;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -38,7 +39,7 @@ public class Robot extends LoggedRobot {
     if (!RobotConstants.useReplay) {
       // logger initialization
       Logger.addDataReceiver(new NT4Publisher());
-      //Logger.addDataReceiver(new WPILOGWriter());
+      Logger.addDataReceiver(new WPILOGWriter());
     } else {
       // Replaying a log, set up replay source
       setUseTiming(false); // Run as fast as possible
@@ -47,10 +48,8 @@ public class Robot extends LoggedRobot {
       Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"), AdvantageScopeOpenBehavior.ALWAYS));
     }
 
-
     Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
     Logger.start();
-    WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
     // early-stage initialization
     DriverStation.silenceJoystickConnectionWarning(true);
@@ -59,6 +58,9 @@ public class Robot extends LoggedRobot {
     PDP.close();
 
     robotContainer = new RobotContainer();
+
+    // warm-up path-following
+    FollowPathCommand.warmupCommand().schedule();
   }
 
   @Override

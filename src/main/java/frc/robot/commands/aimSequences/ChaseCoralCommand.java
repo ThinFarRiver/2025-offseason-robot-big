@@ -118,7 +118,6 @@ public class ChaseCoralCommand extends Command {
             poseWorldRobot.getRotation()
         )
     );
-
   }
 
   @Override
@@ -141,12 +140,12 @@ public class ChaseCoralCommand extends Command {
     static final double driveKi = 0.0;
     static final double driveKd = 0.1;
 
-    static final double turnKp = 4.0;
+    static final double turnKp = 4.5;
     static final double turnKi = 0.0;
-    static final double turnKd = 0.3;
+    static final double turnKd = 0.1;
 
-    static final double activeChaseMaxVelocityMps = 2.0;
+    static final double activeChaseMaxVelocityMps = 2.5;
     static final double blindChaseMaxTimeSeconds = 0.5;
-    static final double blindChaseMaxVelocityMps = 2.0;
+    static final double blindChaseMaxVelocityMps = 1.5;
   }
 }

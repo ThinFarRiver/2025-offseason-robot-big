@@ -15,12 +15,9 @@ import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lib.ironpulse.utils.LoggedTracer;
-import lib.ironpulse.utils.Logging;
 import lombok.Getter;
 import org.littletonrobotics.junction.Logger;
 
@@ -30,7 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static edu.wpi.first.units.Units.Seconds;
+import static edu.wpi.first.units.Units.*;
 
 public class Swerve extends SubsystemBase {
   // locks
@@ -123,6 +120,12 @@ public class Swerve extends SubsystemBase {
     Logger.recordOutput(config.name + "/SwerveModuleStateCmd", setpointCurr.moduleStates());
     Logger.recordOutput(config.name + "/ChassisSpeedCmd", setpointCurr.chassisSpeeds());
     Logger.recordOutput(config.name + "/SwerveEstimatorPose", poseEstimator.getEstimatedPosition());
+
+    var limit = getSwerveLimit();
+    Logger.recordOutput(config.name + "/Limit/MaxLinVelMps", limit.maxLinearVelocity().in(MetersPerSecond));
+    Logger.recordOutput(config.name + "/Limit/MaxSkidAccMps2", limit.maxSkidAcceleration().in(MetersPerSecondPerSecond));
+    Logger.recordOutput(config.name + "/Limit/MaxAngvelDegps", limit.maxAngularVelocity().in(DegreesPerSecond));
+    Logger.recordOutput(config.name + "/Limit/MaxAngAccDegps2", limit.maxAngularAcceleration().in(DegreesPerSecondPerSecond));
   }
 
   // -------- Run -------

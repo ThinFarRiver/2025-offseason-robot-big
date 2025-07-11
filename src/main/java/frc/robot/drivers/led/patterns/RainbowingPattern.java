@@ -9,7 +9,7 @@ public class RainbowingPattern implements AddressableLEDPattern {
     LEDPattern rainbow = LEDPattern.rainbow(255, 128);
     LEDPattern scrollingRainbow =
             rainbow.scrollAtAbsoluteSpeed(
-                    Units.MetersPerSecond.of(0.1),
+                    Units.MetersPerSecond.of(0.3),
                     Units.Meters.of((double) 1 / 65));
 
     @Override

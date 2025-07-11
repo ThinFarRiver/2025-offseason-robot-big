@@ -7,13 +7,16 @@ import com.pathplanner.lib.path.GoalEndState;
 import com.pathplanner.lib.path.PathConstraints;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.path.Waypoint;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.FieldConstants;
+import frc.robot.Robot;
 import frc.robot.RobotConstants;
 import frc.robot.RobotStateRecorder;
 import frc.robot.commands.aimSequences.AimGoalSupplier;
@@ -24,6 +27,7 @@ import frc.robot.subsystems.photonvision.PhotonVisionSubsystem;
 import frc.robot.subsystems.superstructure.DestinationSupplier;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.SuperstructureState;
+import lib.ironpulse.math.MathTools;
 import lib.ironpulse.rbd.TransformRecorder;
 import lib.ironpulse.swerve.Swerve;
 import lib.ironpulse.swerve.SwerveCommands;
@@ -37,10 +41,11 @@ import java.util.List;
 import static edu.wpi.first.units.Units.*;
 import static frc.robot.commands.aimSequences.AimGoalSupplier.isInHexagonalReefDangerZone;
 import static lib.ironpulse.math.MathTools.cross;
+import static lib.ironpulse.math.MathTools.toAngle;
 
 public class AutoActions {
   private static final Pose2d kLeftDecisionPoint = new Pose2d(
-      new Translation2d(2.2, 6.3),
+      new Translation2d(3.5, 6.0),
       Rotation2d.fromDegrees(135)
   );
   private static final Pose2d kLeftBackoff = new Pose2d(
@@ -51,8 +56,9 @@ public class AutoActions {
       new Translation2d(2.50, 5.3),
       Rotation2d.fromDegrees(180)
   );
+
   private static final Pose2d kRightDecisionPoint = new Pose2d(
-      new Translation2d(2.2, 1.5),
+      new Translation2d(3.5, 2.0),
       Rotation2d.fromDegrees(-135)
   );
   private static final Pose2d kRightBackoff = new Pose2d(
@@ -86,7 +92,7 @@ public class AutoActions {
   }
 
   public static Command chase() {
-    return new ChaseCoralCommand(swerve, photon);
+    return new ChaseCoralCommand(swerve, photon).until(AutoActions::isInIntakeDangerZone);
   }
 
   public static Command chaseAndBackoff() {
@@ -99,6 +105,7 @@ public class AutoActions {
   public static Command setGoal(AimGoalSupplier.ReefFace face, boolean isRight, SuperstructureState level) {
     return Commands.runOnce(() -> {
       var dest = DestinationSupplier.getInstance();
+      dest.setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING);
       dest.setStateSetPoint(level);
       dest.updateBranch(isRight);
       AimGoalSupplier.setSelectedTarget(face);
@@ -135,18 +142,18 @@ public class AutoActions {
           : List.of(current, decision);
 
       PathPlannerPath path = generatePath(waypoints, 1.5);
-      return followPath(path);
+      return Commands.deadline(followPath(path), applySwerveLimit().repeatedly());
     });
   }
 
   public static Command driveToEndPoint(boolean isLeft) {
     return swerve.defer(() -> {
       Pose2d current = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
-      Pose2d end = AllianceFlipUtil.apply(isLeft ? kLeftDecisionPoint : kRightDecisionPoint);
+      Pose2d end = AllianceFlipUtil.apply(isLeft ? kLeftEnd : kRightEnd);
 
       List<Pose2d> waypoints = List.of(current, end);
 
-      PathPlannerPath path = generatePath(waypoints, 1.5);
+      PathPlannerPath path = generatePath(waypoints, 0.0);
       return followPath(path);
     });
   }
@@ -240,6 +247,7 @@ public class AutoActions {
                   TransformRecorder.kFrameRobot
               );
             }))
+        .onlyIf(Robot::isSimulation)
         .ignoringDisable(true);
   }
 
@@ -278,6 +286,43 @@ public class AutoActions {
 
   public static Command indicateEnd() {
     return Commands.print("Auto Ended!");
+  }
+
+  public static Command applySwerveLimit() {
+    return Commands.runOnce(() -> {
+      double elevatorHeight = superstructure.getElevatorPosition();
+      double startLimitHeight = AutoParamsNT.TrajectoryLimitStartHeight.getValue();
+      double maxVel = AutoParamsNT.TrajectoryMaxLinVelMps.getValue();
+      double maxAcc = AutoParamsNT.TrajectoryMaxLinAccelMps2.getValue();
+      double limitedVel, limitedAcc;
+      if (elevatorHeight > startLimitHeight) {
+        double maxExtension = RobotConstants.ElevatorConstants.MAX_EXTENSION_METERS.get();
+        double minVel = AutoParamsNT.TrajectoryLimitedLinVelMps.getValue();
+        double minAcc = AutoParamsNT.TrajectoryLimitedLinAccelMps2.getValue();
+        double range = maxExtension - startLimitHeight;
+        double delta = elevatorHeight - startLimitHeight;
+        double k = MathUtil.clamp(delta / range, 0, 1); // k \in [0, 1]
+        limitedVel = maxVel * (1.0 - k) + minVel * k;
+        limitedAcc = maxAcc * (1.0 - k) + minAcc * k;
+      } else {
+        limitedVel = maxVel;
+        limitedAcc = maxAcc;
+      }
+      swerve.setSwerveLimit(
+          SwerveLimit.builder()
+              .maxLinearVelocity(MetersPerSecond.of(limitedVel))
+              .maxSkidAcceleration(MetersPerSecondPerSecond.of(limitedAcc))
+              .maxAngularVelocity(DegreesPerSecond.of(
+                  AutoParamsNT.TrajectoryMaxAngVelDegps.getValue()
+              ))
+              .maxAngularAcceleration(DegreesPerSecondPerSecond.of(
+                  AutoParamsNT.TrajectoryMaxAngAccelDegps2.getValue()
+              ))
+              .build()
+      );
+
+      System.out.println("Limiting: " + limitedVel + ", " + limitedAcc);
+    });
   }
 
   // ----------------------------------- Helpers ------------------------------------------------
@@ -356,18 +401,34 @@ public class AutoActions {
     return beyondRightLine || beyondLeftLine || beyondBottom || outOfYBounds;
   }
 
+  public static boolean isCoralInSight() {
+    var coralTarget = RobotStateRecorder.getNearestCoral();
+    if(coralTarget.isEmpty()) return false;
+    var posWorldCoral = coralTarget.get().getTranslation();
+    var poseWorldRobot = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
+
+    var dirRobotCoral = toAngle(posWorldCoral.minus(poseWorldRobot.getTranslation()));
+    return Math.abs(dirRobotCoral.getDegrees()) < AutoParamsNT.CoralInSightDegs.getValue();
+  }
+
   @NTParameter(tableName = "Params/Auto")
   public static class AutoParams {
     static final double TrajectoryMaxLinVelMps = 4.5;
-    static final double TrajectoryMaxLinAccelMps2 = 12.0;
+    static final double TrajectoryMaxLinAccelMps2 = 7.0;
     static final double TrajectoryMaxAngVelDegps = 600.0;
     static final double TrajectoryMaxAngAccelDegps2 = 1200.0;
 
-    static final double RightTriangleX = 1.669;
-    static final double RightTriangleY = 1.276;
-    static final double LeftTriangleX = 1.786;
-    static final double LeftTriangleY = 6.76;
-    static final double BoundaryOffset = 0.70;
+    static final double TrajectoryLimitedLinVelMps = 3.0;
+    static final double TrajectoryLimitedLinAccelMps2 = 5.0;
+    static final double TrajectoryLimitStartHeight = 0.6;
+
+    static final double CoralInSightDegs = 60.0;
+
+    static final double RightTriangleX = 3.5;
+    static final double RightTriangleY = 3.0;
+    static final double LeftTriangleX = 3.5;
+    static final double LeftTriangleY = 5.0;
+    static final double BoundaryOffset = 0.9;
   }
 
 }

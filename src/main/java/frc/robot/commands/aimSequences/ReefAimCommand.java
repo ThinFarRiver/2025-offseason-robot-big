@@ -13,6 +13,7 @@ import frc.robot.RobotStateRecorder;
 import frc.robot.subsystems.indicator.IndicatorIO;
 import frc.robot.subsystems.indicator.IndicatorSubsystem;
 import frc.robot.subsystems.superstructure.DestinationSupplier;
+import frc.robot.subsystems.superstructure.Superstructure;
 import lib.ironpulse.math.MathTools;
 import lib.ironpulse.swerve.Swerve;
 import lib.ironpulse.swerve.SwerveLimit;
@@ -195,6 +196,7 @@ public class ReefAimCommand extends Command {
   @Override
   public void end(boolean interrupted) {
     swerve.setSwerveLimitDefault();
+    swerve.runStop();
     if (!interrupted) indicatorSubsystem.setPattern(IndicatorIO.Patterns.AIMED);
     else indicatorSubsystem.setPattern(IndicatorIO.Patterns.NORMAL);
   }
@@ -211,21 +213,21 @@ public class ReefAimCommand extends Command {
     static final double translationKiZone = 0.00;
     static final double translationKd = 0.15;
     static final double translationVelocityMaxFar = 4.6;
-    static final double translationVelocityMaxNear = 3.0;
+    static final double translationVelocityMaxNear = 2.5;
     static final double translationParamsChangeDistance = 2.0;
-    static final double translationAccelerationMax = 8.0;
+    static final double translationAccelerationMax = 10.0;
 
     static final double rotationKp = 4.5;
     static final double rotationKi = 0.0;
     static final double rotationKiZone = 0.0;
-    static final double rotationKd = 0.4;
+    static final double rotationKd = 0.1;
     static final double rotationVelocityMax = 500.0;
     static final double rotationAccelerationMax = 2000.0;
 
     static final double translationOnTargetToleranceMeter = 0.015;
     static final double translationOnTargetVelocityMetersPerSecond = 0.25;
     static final double rotationOnTargetToleranceDegree = 1.0;
-    static final double rotationOnTargetVelocityToleranceDegreesPerSecond = 12.0;
+    static final double rotationOnTargetVelocityToleranceDegreesPerSecond = 15.0;
     static final double rotationAdjustmentMaxDegree = 0.0;
   }
 }

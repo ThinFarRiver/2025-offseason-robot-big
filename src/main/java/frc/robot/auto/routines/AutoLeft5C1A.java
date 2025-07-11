@@ -3,8 +3,12 @@ package frc.robot.auto.routines;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.FieldConstants;
+import frc.robot.Robot;
+import frc.robot.auto.AutoActions;
 import frc.robot.auto.AutoRoutine;
 import frc.robot.commands.aimSequences.AimGoalSupplier;
 import frc.robot.subsystems.superstructure.SuperstructureState;
@@ -22,6 +26,16 @@ public class AutoLeft5C1A extends AutoRoutine {
     super("Left5C1A");
   }
 
+  private Command getCoral(boolean backoff) {
+    return deadline(
+        sequence(
+            driveToDecisionPoint(true, backoff).until(AutoActions::isCoralInSight),
+            chase().onlyIf(AutoActions::isCoralInSight)
+        ),
+        intake()
+    );
+  }
+
   @Override
   public Command getAutoCommand() {
     var scorePreload = sequence(
@@ -33,11 +47,6 @@ public class AutoLeft5C1A extends AutoRoutine {
         shoot()
     );
 
-    var driveToDpAndIntake1 = deadline(
-        driveToDecisionPoint(true, true),
-        intake()
-    );
-
     var scoreNearL4Right = sequence(
         setGoal(AimGoalSupplier.ReefFace.NearLeftTilt, true, SuperstructureState.L4),
         parallel(
@@ -45,11 +54,6 @@ public class AutoLeft5C1A extends AutoRoutine {
             prepare()
         ),
         shoot()
-    );
-
-    var driveToDpAndIntake2 = deadline(
-        driveToDecisionPoint(true, false),
-        intake()
     );
 
     var scoreNearL4Left = sequence(
@@ -61,10 +65,6 @@ public class AutoLeft5C1A extends AutoRoutine {
         shoot()
     );
 
-    var driveToDpAndIntake3 = deadline(
-        driveToDecisionPoint(true, false),
-        intake()
-    );
 
     var scoreNearL3Right = sequence(
         setGoal(AimGoalSupplier.ReefFace.NearLeftTilt, true, SuperstructureState.L3),
@@ -73,11 +73,6 @@ public class AutoLeft5C1A extends AutoRoutine {
             prepare()
         ),
         shoot()
-    );
-
-    var driveToDpAndIntake4 = deadline(
-        driveToDecisionPoint(true, false),
-        intake()
     );
 
     var scoreNearL3Left = sequence(
@@ -98,13 +93,13 @@ public class AutoLeft5C1A extends AutoRoutine {
 
     return sequence(
         scorePreload,
-        driveToDpAndIntake1,
+        getCoral(true),
         scoreNearL4Right,
-        driveToDpAndIntake2,
+        getCoral(false),
         scoreNearL4Left,
-        driveToDpAndIntake3,
+        getCoral(false),
         scoreNearL3Right,
-        driveToDpAndIntake4,
+        getCoral(false),
         scoreNearL3Left,
         ending
     );
@@ -114,4 +109,5 @@ public class AutoLeft5C1A extends AutoRoutine {
   public Command getOnSelectCommand() {
     return resetOnPose(startPose);
   }
+
 }

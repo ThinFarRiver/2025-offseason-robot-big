@@ -48,11 +48,9 @@ public class CoralRecorder {
 
     // if have near coral and within radius, update to current
     if (nearest != null && minDistance <= CoralRecorderParamsNT.sameCoralRadiusMeters.getValue()) {
-      System.out.println("Before: "  + nearest.getConfidence());
       nearest.setConfidence(
           Math.min(1.0, nearest.getConfidence() + dt *  CoralRecorderParamsNT.confidenceTimeObservationGain.getValue())
       );
-      System.out.println("After: "  + nearest.getConfidence());
       nearest.setTranslation(
           nearest.getTranslation().interpolate(loc, CoralRecorderParamsNT.confidenceNewObservationProportion.getValue())
       );

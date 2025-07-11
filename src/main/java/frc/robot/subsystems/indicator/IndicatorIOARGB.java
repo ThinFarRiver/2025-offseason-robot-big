@@ -28,10 +28,6 @@ public class IndicatorIOARGB implements IndicatorIO {
     @Override
     public void setPattern(Patterns pattern) {
         currentPattern = pattern;
-        if (pattern == Patterns.NORMAL) {
-            led.setPattern(new RainbowingPattern());
-            return;
-        }
         led.setPattern(pattern.pattern);
     }
 

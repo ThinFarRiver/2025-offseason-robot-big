@@ -5,6 +5,8 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.FieldConstants;
+import frc.robot.RobotStateRecorder;
+import frc.robot.auto.AutoActions;
 import frc.robot.auto.AutoRoutine;
 import frc.robot.commands.aimSequences.AimGoalSupplier;
 import frc.robot.subsystems.superstructure.SuperstructureState;
@@ -34,7 +36,10 @@ public class AutoLeft1C extends AutoRoutine {
     );
 
     var driveToDpAndIntake1 = deadline(
-        driveToDecisionPoint(true, true),
+        sequence(
+            driveToDecisionPoint(true, true).until(AutoActions::isCoralInSight),
+            chase().onlyIf(AutoActions::isCoralInSight)
+        ),
         intake()
     );
 

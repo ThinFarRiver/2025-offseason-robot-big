@@ -12,6 +12,8 @@ import edu.wpi.first.wpilibj.Timer;
 import frc.robot.auto.AutoActions;
 import frc.robot.utils.CoralRecorder;
 import lib.ironpulse.rbd.TransformRecorder;
+import lombok.Getter;
+import lombok.Setter;
 import org.littletonrobotics.junction.Logger;
 
 import java.util.Optional;
