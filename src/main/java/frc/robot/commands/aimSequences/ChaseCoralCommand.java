@@ -136,16 +136,16 @@ public class ChaseCoralCommand extends Command {
 
   @NTParameter(tableName = "Params/Commands/ChaseCoralCommand")
   public static class ChaseCoralCommandParams {
-    static final double driveKp = 3.5;
+    static final double driveKp = 2.5;
     static final double driveKi = 0.0;
     static final double driveKd = 0.1;
 
-    static final double turnKp = 4.5;
+    static final double turnKp = 6.0;
     static final double turnKi = 0.0;
-    static final double turnKd = 0.1;
+    static final double turnKd = 0.2;
 
     static final double activeChaseMaxVelocityMps = 2.5;
-    static final double blindChaseMaxTimeSeconds = 0.5;
+    static final double blindChaseMaxTimeSeconds = 0.3;
     static final double blindChaseMaxVelocityMps = 1.5;
   }
 }

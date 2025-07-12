@@ -123,8 +123,8 @@ public class RobotContainer {
           new RollerIOReal(
               RobotConstants.IntakeConstants.INTAKE_MOTOR_ID,
               RobotConstants.CANIVORE_CAN_BUS_NAME,
-              RobotConstants.IntakeConstants.STATOR_CURRENT_LIMIT_AMPS,
-              RobotConstants.IntakeConstants.SUPPLY_CURRENT_LIMIT_AMPS,
+              60,
+              60,
               RobotConstants.IntakeConstants.IS_INTAKER_INVERT,
               RobotConstants.IntakeConstants.IS_BRAKE),
           new RollerIOReal(
@@ -257,15 +257,25 @@ public class RobotContainer {
 
     driverController.b().whileTrue(superstructure.runGoal(() -> SuperstructureState.CORAL_OUTTAKE));
     
-     driverController.x().whileTrue(
-     Commands.runOnce(() -> {
-     destinationSupplier.setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING);
-     })
-     .andThen(
-     new ReefAimCommand(swerve, indicatorSubsystem)
-     )
-     );
-//     driverController.x().whileTrue(AutoActions.chase());
+//     driverController.x().whileTrue(
+//     Commands.runOnce(() -> {
+//     destinationSupplier.setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING);
+//     })
+//     .andThen(
+//     new ReefAimCommand(swerve, indicatorSubsystem)
+//     )
+//     );
+     driverController.x().whileTrue(AutoActions.chase().alongWith(
+         Commands.runOnce(
+             () -> {
+               if(AutoActions.isCoralInSight()) {
+                 indicatorSubsystem.setPattern(IndicatorIO.Patterns.ASSISTED_INTAKE);
+               } else {
+                 indicatorSubsystem.setPattern(IndicatorIO.Patterns.INTAKE);
+               }
+             }
+         ,indicatorSubsystem).repeatedly()
+     ));
 
    driverController.povDown().whileTrue(
      Commands.either(

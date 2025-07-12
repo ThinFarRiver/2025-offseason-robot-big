@@ -24,9 +24,11 @@ public interface IndicatorIO {
     default void reset() {}
 
     enum Patterns {
-        NORMAL(new BlinkingPattern(Color.kBlue, 0.5)),
+        NORMAL(new SolidColorPattern(Color.kBlue)),
         INTAKE(new BlinkingPattern(Color.kRed, 0.02)),
-        AFTER_INTAKE(new BlinkingPattern(Color.kGreen, 0.02)),
+        ASSISTED_INTAKE(new BlinkingPattern(Color.kLightPink, 0.02)),
+        AFTER_INTAKE(new BlinkingPattern(Color.kGreen, 0.2)),
+
         RESET_ODOM(new BlinkingPattern(Color.kWhite, 0.1)),
         AIMING(new BlinkingPattern(Color.kBlue, 0.02)),
         AIMED(new SolidColorPattern(Color.kBlue));

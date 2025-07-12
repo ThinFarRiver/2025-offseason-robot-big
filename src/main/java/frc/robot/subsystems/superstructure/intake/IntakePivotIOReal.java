@@ -38,8 +38,7 @@ public class IntakePivotIOReal implements IntakePivotIO {
     private final VoltageOut voltageOut = new VoltageOut(0.0).withEnableFOC(false);
     private final PositionDutyCycle motionMagic = new PositionDutyCycle(0.0).withEnableFOC(true);
 
-
-    double targetAngleDeg = 0.0;
+    double targetAngleDeg = 142.0;
 
     public IntakePivotIOReal() {
         var config = new TalonFXConfiguration();
@@ -67,6 +66,11 @@ public class IntakePivotIOReal implements IntakePivotIO {
                 .withKS(IntakePivotGainsClass.INTAKE_PIVOT_KS.get())
                 .withKG(IntakePivotGainsClass.INTAKE_PIVOT_KG.get())
                 .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign));
+        config.withMotionMagic(
+            new MotionMagicConfigs()
+                .withMotionMagicCruiseVelocity(IntakePivotGainsClass.INTAKE_PIVOT_CRUISEVEL.get())
+                .withMotionMagicAcceleration(IntakePivotGainsClass.INTAKE_PIVOT_ACC.get())
+        );
 
         config.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
@@ -123,6 +127,11 @@ public class IntakePivotIOReal implements IntakePivotIO {
                     .withKG(inputs.intakePivotKG)
                     .withKS(inputs.intakePivotKS));
 
+            motor.getConfigurator().apply(
+                new MotionMagicConfigs()
+                    .withMotionMagicCruiseVelocity(IntakePivotGainsClass.INTAKE_PIVOT_CRUISEVEL.get())
+                    .withMotionMagicAcceleration(IntakePivotGainsClass.INTAKE_PIVOT_ACC.get())
+            );
         }
     }
 

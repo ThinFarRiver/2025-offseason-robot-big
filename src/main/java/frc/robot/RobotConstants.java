@@ -245,7 +245,7 @@ public final class RobotConstants {
         .maxLinearVelocity(MetersPerSecond.of(4.5))
         .maxSkidAcceleration(MetersPerSecondPerSecond.of(15.0))
         // must be smaller than 4.5 / (dist * sqrt(2)) to be actually effective
-        .maxAngularVelocity(DegreesPerSecond.of(450.0))
+        .maxAngularVelocity(DegreesPerSecond.of(700.0))
         // accelerate in 0.2s, also must be smaller than the defined module limit to be actually effective
         .maxAngularAcceleration(DegreesPerSecondPerSecond.of(2000.0))
         .build();
@@ -341,10 +341,10 @@ public final class RobotConstants {
     @NTParameter(tableName = "Params" + "/" + kSwerveModuleTag)
     private final static class SwerveModuleParams {
       private final static class Drive {
-        static final double kP = 9.0;
-        static final double kI = 0.0;
+        static final double kP = 8.0;
+        static final double kI = 0.12;
         static final double kD = 0.0;
-        static final double kS = 0.12727;
+        static final double kS = 0.0;
         static final double kV = 0.1247;
         static final double kA = 0.01215;
         static final boolean isBrake = true;
@@ -401,8 +401,8 @@ public final class RobotConstants {
     public static final double INTAKE_PIVOT_ROTOR_ENCODER_RATIO = 45 / 11 * 56 / 20 * 56 / 8;
 
     //Constants for intake roller
-    public static final int STATOR_CURRENT_LIMIT_AMPS = 80;
-    public static final int SUPPLY_CURRENT_LIMIT_AMPS = 80;
+    public static final int STATOR_CURRENT_LIMIT_AMPS = 25;
+    public static final int SUPPLY_CURRENT_LIMIT_AMPS = 25;
     public static final boolean IS_BRAKE = false;
     public static final boolean IS_INTAKER_INVERT = true;
     public static final boolean IS_INDEXER_INVERT = true;
@@ -444,6 +444,9 @@ public final class RobotConstants {
       public static final TunableNumber INTAKE_PIVOT_KD = new TunableNumber("INTAKE_PIVOT PID/kd", 0.1);
       public static final TunableNumber INTAKE_PIVOT_KS = new TunableNumber("INTAKE_PIVOT PID/ks", 0);
       public static final TunableNumber INTAKE_PIVOT_KG = new TunableNumber("INTAKE_PIVOT PID/kg", -0.015);
+
+      public static final TunableNumber INTAKE_PIVOT_CRUISEVEL = new TunableNumber("INTAKE_PIVOT/cruiseVel", 100);
+      public static final TunableNumber INTAKE_PIVOT_ACC = new TunableNumber("INTAKE_PIVOT/acc", 100);
     }
   }
 
@@ -486,7 +489,7 @@ public final class RobotConstants {
         1.475);
     public static final TunableNumber ELEVATOR_ZEROING_CURRENT = new TunableNumber("Elevator/zeroingCurrent",
         40);
-    public static final TunableNumber SAFE_HEIGHT_FLIP = new TunableNumber("Elevator/safeHeightFlip", 0.6);
+    public static final TunableNumber SAFE_HEIGHT_FLIP = new TunableNumber("Elevator/safeHeightFlip", 0.5);
 
     public static final TunableNumber FLYBY_HEIGHT = new TunableNumber("Elevator/FlybyHeight", 1.43);
     // SysId characterization constants
@@ -519,12 +522,7 @@ public final class RobotConstants {
     public static class PhotonvisionConstants {
         public static final String[] PV_CAMERA_NAMES = {"pv-cam1"};
         public static final boolean[] SNAPSHOT_ENABLED = {true};
-        public static final int SNAPSHOT_PERIOD = 5; //seconds
-        public static final String kPhotonVisionTag = "PhotonVision";
-        
-        // Camera resolution constants (fixed hardware values)
-        public static final int CAMERA_RESOLUTION_X = 640;
-        public static final int CAMERA_RESOLUTION_Y = 480;
+        public static final int SNAPSHOT_PERIOD = 5;
     }
 
   /**

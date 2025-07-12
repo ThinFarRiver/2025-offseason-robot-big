@@ -32,7 +32,7 @@ public class AutoRight5C1A extends AutoRoutine {
     );
 
     var driveToDpAndIntake1 = deadline(
-        driveToDecisionPoint(false, true),
+        driveToIntakePoint(false, true),
         intake()
     );
 
@@ -46,7 +46,7 @@ public class AutoRight5C1A extends AutoRoutine {
     );
 
     var driveToDpAndIntake2 = deadline(
-        driveToDecisionPoint(false, false),
+        driveToIntakePoint(false, false),
         intake()
     );
 
@@ -60,7 +60,7 @@ public class AutoRight5C1A extends AutoRoutine {
     );
 
     var driveToDpAndIntake3 = deadline(
-        driveToDecisionPoint(false, false),
+        driveToIntakePoint(false, false),
         intake()
     );
 
@@ -74,7 +74,7 @@ public class AutoRight5C1A extends AutoRoutine {
     );
 
     var driveToDpAndIntake4 = deadline(
-        driveToDecisionPoint(false, false),
+        driveToIntakePoint(false, false),
         intake()
     );
 

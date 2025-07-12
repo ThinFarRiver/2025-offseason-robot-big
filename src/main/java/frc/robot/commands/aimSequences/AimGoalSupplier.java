@@ -62,8 +62,9 @@ public class AimGoalSupplier {
   public static Pose2d getFinalCoralTarget(Pose2d goal, boolean rightReef) {
     goal = goal.transformBy(new Transform2d(
         new Translation2d(
-            AimParamsNT.RobotToPipeMeters.getValue(),
-            RobotConstants.ReefAimConstants.PIPE_TO_TAG.magnitude() * (rightReef ? 1 : -1)),
+            AimParamsNT.RobotToPipeXMeters.getValue(),
+            RobotConstants.ReefAimConstants.PIPE_TO_TAG.magnitude() * (rightReef ? 1 : -1) + AimParamsNT.RobotToPipeYMeters.getValue()
+        ),
         new Rotation2d()));
     return goal;
   }
@@ -342,24 +343,26 @@ public class AimGoalSupplier {
     FarLeftTilt(11, 20),
     NearLeftTilt(6, 19);
 
+    public int redId;
+    public int blueId;
     ReefFace(int redId, int blueId) {
       this.redId = redId;
       this.blueId = blueId;
     }
-    public int redId;
-    public int blueId;
   }
 
   @NTParameter(tableName = "Params/AimParams")
   private static class AimParams {
-    static final double MaxDistanceReefLineup = 1.0;
-    static final double RobotToPipeMeters = 0.55;
+    static final double MaxDistanceReefLineup = 0.75;
+    static final double RobotToPipeXMeters = 0.52;
+    static final double RobotToPipeYMeters = -0.03;
+
     static final double RobotToAlgaeMeters = 0.4;
     static final double AlgaeToTagMeters = 0.2;
     static final double HexagonDangerZoneOffset = 0.3;
     static final double HexagonDangerDegrees = 45.0;
     static final double EdgeCaseMaxDelta = 0.2;
-    static final double ShiftingTerminate = 0.8;
+    static final double ShiftingTerminate = 0.2;
     static final double NetClearanceDistance = 1.15;
     static final double NetNearDistance = 1.60;
   }

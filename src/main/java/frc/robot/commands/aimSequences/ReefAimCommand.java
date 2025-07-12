@@ -2,12 +2,11 @@ package frc.robot.commands.aimSequences;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Robot;
 import frc.robot.RobotConstants;
@@ -25,23 +24,17 @@ import org.littletonrobotics.junction.Logger;
 
 import static edu.wpi.first.math.util.Units.degreesToRadians;
 import static edu.wpi.first.units.Units.*;
-import static lib.ironpulse.math.MathTools.*;
+import static lib.ironpulse.math.MathTools.epsilonEquals;
+import static lib.ironpulse.math.MathTools.unwrapAngle;
 
 public class ReefAimCommand extends Command {
   private final static String kTag = "Commands/ReefAimCommand";
   private final Swerve swerve;
   private final IndicatorSubsystem indicatorSubsystem;
   private boolean rightReef; // true if shooting right reef
-  private boolean xOnTarget = false;
-  private boolean xStationary = false;
-  private boolean yOnTarget = false;
-  private boolean yStationary = false;
-  private boolean rotationOnTarget = false;
-  private boolean rotationStationary = false;
-  private boolean imuStable = false;
+  private boolean xOnTarget, xStationary, yOnTarget, yStationary, rotationOnTarget, rotationStationary, imuPitchStable, imuRollStable;
   private Pose2d poseWorldRobot, velocityRobot, tagPose, poseWorldTarget, finalDestinationPose;
-  private ProfiledPIDController xController;
-  private PIDController yController;
+  private PIDController translationController;
   private PIDController rotationController;
 
   private final boolean useSelectedTarget;
@@ -50,19 +43,10 @@ public class ReefAimCommand extends Command {
     this.indicatorSubsystem = indicatorSubsystem;
     this.swerve = swerve;
 
-    xController = new ProfiledPIDController(
-        ReefAimCommandParamsNT.xKp.getValue(),
-        ReefAimCommandParamsNT.xKi.getValue(),
-        ReefAimCommandParamsNT.xKd.getValue(),
-        new TrapezoidProfile.Constraints(
-            ReefAimCommandParamsNT.xVelMax.getValue(),
-            ReefAimCommandParamsNT.xAccMax.getValue()
-        )
-    );
-    yController = new PIDController(
-        ReefAimCommandParamsNT.yKp.getValue(),
-        ReefAimCommandParamsNT.yKi.getValue(),
-        ReefAimCommandParamsNT.yKd.getValue()
+    translationController = new PIDController(
+        ReefAimCommandParamsNT.translationKp.getValue(),
+        ReefAimCommandParamsNT.translationKi.getValue(),
+        ReefAimCommandParamsNT.translationKd.getValue()
     );
     rotationController = new PIDController(
         ReefAimCommandParamsNT.rotationKp.getValue(),
@@ -82,21 +66,10 @@ public class ReefAimCommand extends Command {
   public void initialize() {
     // tuning
     if (RobotConstants.TUNING) {
-      xController.setP(ReefAimCommandParamsNT.xKp.getValue());
-      xController.setI(ReefAimCommandParamsNT.xKi.getValue());
-      xController.setIZone(ReefAimCommandParamsNT.xKiZone.getValue());
-      xController.setD(ReefAimCommandParamsNT.xKd.getValue());
-      xController.setConstraints(
-          new TrapezoidProfile.Constraints(
-              ReefAimCommandParamsNT.xVelMax.getValue(),
-              ReefAimCommandParamsNT.xAccMax.getValue()
-          )
-      );
-
-      yController.setP(ReefAimCommandParamsNT.yKp.getValue());
-      yController.setI(ReefAimCommandParamsNT.yKi.getValue());
-      yController.setIZone(ReefAimCommandParamsNT.yKiZone.getValue());
-      yController.setD(ReefAimCommandParamsNT.yKd.getValue());
+      translationController.setP(ReefAimCommandParamsNT.translationKp.getValue());
+      translationController.setI(ReefAimCommandParamsNT.translationKi.getValue());
+      translationController.setIZone(ReefAimCommandParamsNT.translationKiZone.getValue());
+      translationController.setD(ReefAimCommandParamsNT.translationKd.getValue());
 
       rotationController.setP(ReefAimCommandParamsNT.rotationKp.getValue());
       rotationController.setI(ReefAimCommandParamsNT.rotationKi.getValue());
@@ -110,7 +83,7 @@ public class ReefAimCommand extends Command {
 
     // get current state
     poseWorldRobot = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
-    velocityRobot = RobotStateRecorder.getVelocityRobotCurrent();
+    velocityRobot = RobotStateRecorder.getVelocityWorldRobotCurrent();
 
     // calculate destination
     tagPose = useSelectedTarget ? AimGoalSupplier.getSelectedTag() : AimGoalSupplier.getNearestTag(poseWorldRobot);
@@ -128,8 +101,7 @@ public class ReefAimCommand extends Command {
 
     // PID init with field-relative velocities
     rotationController.enableContinuousInput(0, Math.PI * 2);
-    xController.reset(velocityRobot.getTranslation().getX());
-    yController.reset();
+    translationController.reset();
     rotationController.reset();
     indicatorSubsystem.setPattern(IndicatorIO.Patterns.AIMING);
   }
@@ -143,8 +115,11 @@ public class ReefAimCommand extends Command {
 
     // compute translation error, tu
     Translation2d pRT = poseRobotTarget.getTranslation();
-    double vxRT = -xController.calculate(pRT.getX(), 0.0);
-    double vyRT = -yController.calculate(pRT.getY(), 0.0);
+    double pRT_norm = pRT.getNorm();
+    Rotation2d pRT_dir = MathTools.toAngle(pRT);
+    // NOTE: as pRT_norm is always positive, then vRT_norm is always negative.
+    // to make the robot move along but not opposite to pRT_dir, we take the minus sign before vRT_norm
+    double vRT_norm = -translationController.calculate(pRT_norm, 0.0);
 
     // compute rotation err, turn into angular velocity scalar
     double thetaRTOriginal = poseRobotTarget.getRotation().getRadians();
@@ -159,7 +134,8 @@ public class ReefAimCommand extends Command {
     double vNear = ReefAimCommandParamsNT.translationVelocityMaxNear.getValue();
     double dChange = ReefAimCommandParamsNT.translationParamsChangeDistance.getValue();
     double maxTranslationVelocityMps = dCurr > dChange ? vFar : vNear + dCurr / dChange * (vFar - vNear);
-    Translation2d vRT = new Translation2d(vxRT, vyRT);
+    vRT_norm = MathUtil.clamp(vRT_norm, 0.0, maxTranslationVelocityMps);
+    Translation2d vRT = new Translation2d(vRT_norm, pRT_dir);
 
     // compose and run velocity with limit
     swerve.setSwerveLimit(
@@ -177,51 +153,59 @@ public class ReefAimCommand extends Command {
     Logger.recordOutput(kTag + "/tagPose", tagPose);
     Logger.recordOutput(kTag + "/destinationPose", poseWorldTarget);
     Logger.recordOutput(kTag + "/finalDestinationPose", finalDestinationPose);
-    Logger.recordOutput(kTag + "/maxTranslationVelocityMps", maxTranslationVelocityMps);
   }
 
   @Override
   public boolean isFinished() {
     Pose2d poseRobotTarget = poseWorldTarget.relativeTo(poseWorldRobot);
+    Rotation3d imuRotation = swerve.getEstimatedPose().getRotation();
     xOnTarget = epsilonEquals(
         poseRobotTarget.getTranslation().getX(), 0.0,
         ReefAimCommandParamsNT.xOnTargetMeter.getValue()
     );
+    xStationary = epsilonEquals(
+        velocityRobot.getTranslation().getX(), 0.0,
+        ReefAimCommandParamsNT.xStationaryMetersPerSecond.getValue()
+    );
     yOnTarget = epsilonEquals(
         poseRobotTarget.getTranslation().getY(), 0.0,
         ReefAimCommandParamsNT.yOnTargetMeter.getValue()
+    );
+    yStationary = epsilonEquals(
+        velocityRobot.getTranslation().getY(), 0.0,
+        ReefAimCommandParamsNT.yStationaryMetersPerSecond.getValue()
     );
     rotationOnTarget = epsilonEquals(
         poseRobotTarget.getRotation().getDegrees(),
         0.0,
         ReefAimCommandParamsNT.rotationOnTargetToleranceDegree.getValue()
     );
-
-    xStationary = epsilonEquals(
-        velocityRobot.getTranslation().getX(), 0.0,
-        ReefAimCommandParamsNT.xStationaryMps.getValue()
-    );
-    yStationary = epsilonEquals(
-        velocityRobot.getTranslation().getY(), 0.0,
-        ReefAimCommandParamsNT.yStationaryMps.getValue()
-    );
     rotationStationary = epsilonEquals(
         velocityRobot.getRotation().getDegrees(), 0.0,
         ReefAimCommandParamsNT.rotationOnTargetVelocityToleranceDegreesPerSecond.getValue()
     );
-
-    imuStable = epsilonEquals(
-        swerve.getEstimatedPose().getRotation().getY(), -0.01, 0.025
+    imuPitchStable = epsilonEquals(
+        imuRotation.getMeasureY().in(Degree), 0.0,
+        ReefAimCommandParamsNT.imuStationaryDeg.getValue()
+    );
+    imuRollStable = epsilonEquals(
+        imuRotation.getMeasureX().in(Degree), 0.0,
+        ReefAimCommandParamsNT.imuStationaryDeg.getValue()
     );
 
+
     Logger.recordOutput(kTag + "/xOnTarget", xOnTarget);
-    Logger.recordOutput(kTag + "/yOnTarget", yOnTarget);
-    Logger.recordOutput(kTag + "/rotationOnTarget", rotationOnTarget);
     Logger.recordOutput(kTag + "/xStationary", xStationary);
+    Logger.recordOutput(kTag + "/yOnTarget", yOnTarget);
     Logger.recordOutput(kTag + "/yStationary", yStationary);
+    Logger.recordOutput(kTag + "/rotationOnTarget", rotationOnTarget);
     Logger.recordOutput(kTag + "/rotationStationary", rotationStationary);
-    Logger.recordOutput(kTag + "/imuStable", imuStable);
-    return (xOnTarget && yOnTarget && rotationOnTarget && xStationary && yStationary && rotationStationary && imuStable);
+    Logger.recordOutput(kTag + "/imuPitchStable", imuPitchStable);
+    Logger.recordOutput(kTag + "/imuRollStable", imuRollStable);
+    return (
+        xOnTarget && xStationary && yOnTarget && yStationary && rotationOnTarget && rotationStationary
+        && imuPitchStable && imuRollStable
+    );
   }
 
   @Override
@@ -239,36 +223,29 @@ public class ReefAimCommand extends Command {
 
   @NTParameter(tableName = "Params/" + kTag)
   public static class ReefAimCommandParams {
-    static final double xKp = 3.7;
-    static final double xKi = 0.0;
-    static final double xKiZone = 0.0;
-    static final double xKd = 0.1;
-    static final double xVelMax = 4.0;
-    static final double xAccMax = 3.5;
-
-    static final double yKp = 4.7;
-    static final double yKi = 0.0;
-    static final double yKiZone = 0.00;
-    static final double yKd = 0.5;
-
+    static final double translationKp = 3.2;
+    static final double translationKi = 0.0;
+    static final double translationKiZone = 0.00;
+    static final double translationKd = 0.10;
     static final double translationVelocityMaxFar = 4.6;
     static final double translationVelocityMaxNear = 3.5;
-    static final double translationParamsChangeDistance = 2.2;
-    static final double translationAccelerationMax = 10.0;
+    static final double translationParamsChangeDistance = 1.5;
+    static final double translationAccelerationMax = 13.0;
 
-    static final double rotationKp = 5.0;
+    static final double rotationKp = 4.5;
     static final double rotationKi = 0.0;
     static final double rotationKiZone = 0.0;
-    static final double rotationKd = 0.2;
-    static final double rotationVelocityMax = 550.0;
-    static final double rotationAccelerationMax = 2500.0;
+    static final double rotationKd = 0.1;
+    static final double rotationVelocityMax = 500.0;
+    static final double rotationAccelerationMax = 2000.0;
 
-    static final double xOnTargetMeter = 0.05;
+    static final double xOnTargetMeter = 0.04;
     static final double yOnTargetMeter = 0.02;
-    static final double xStationaryMps = 0.35;
-    static final double yStationaryMps = 0.10;
-    static final double rotationOnTargetToleranceDegree = 2.0;
-    static final double rotationOnTargetVelocityToleranceDegreesPerSecond = 20.0;
+    static final double xStationaryMetersPerSecond = 0.35;
+    static final double yStationaryMetersPerSecond = 0.25;
+    static final double imuStationaryDeg = 4;
+    static final double rotationOnTargetToleranceDegree = 1.5;
+    static final double rotationOnTargetVelocityToleranceDegreesPerSecond = 15.0;
     static final double rotationAdjustmentMaxDegree = 0.0;
   }
 }

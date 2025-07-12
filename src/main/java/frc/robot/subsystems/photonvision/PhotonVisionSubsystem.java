@@ -31,14 +31,11 @@ public class PhotonVisionSubsystem extends SubsystemBase {
         // Camera physical configuration
         public static final double CAMERA_HEIGHT_METERS = 1.0;
         public static final double CAMERA_PITCH_DEGREES = -30.0;
-        
-        // Camera field of view (FOV)
-        public static final double CAMERA_HORIZONTAL_FOV_DEGREES = 65.93;
-        public static final double CAMERA_VERTICAL_FOV_DEGREES = 51.89;
-        
+        public static final double CAMERA_YAW_DEGREES = 7.0;
+
         // Camera to robot transform (camera position relative to robot center)
-        public static final double CAMERA_TO_ROBOT_X = 0.14;  // 0.14m front
-        public static final double CAMERA_TO_ROBOT_Y = 0.0;   // 0.00m left
+        public static final double CAMERA_TO_ROBOT_X = 0.0;  // 0.14m front
+        public static final double CAMERA_TO_ROBOT_Y = -0.07;   // 0.00m left
         
         // Distance estimation parameters
         public static final double DISTANCE_SCALE_FACTOR = 1.0;
@@ -316,35 +313,35 @@ public class PhotonVisionSubsystem extends SubsystemBase {
      */
     public Pose3d projectTargetTo3D(RawDetection detection) {
         // Get camera configuration
-        double cameraHeight = PhotonVisionParams.CAMERA_HEIGHT_METERS;
-        double cameraPitch = PhotonVisionParams.CAMERA_PITCH_DEGREES;
-        double groundHeight = PhotonVisionParams.GROUND_HEIGHT_METERS;
-        double distanceScale = PhotonVisionParams.DISTANCE_SCALE_FACTOR;
-        
+        double cameraHeight = PhotonVisionParamsNT.CAMERA_HEIGHT_METERS.getValue();
+        double cameraPitch = PhotonVisionParamsNT.CAMERA_PITCH_DEGREES.getValue();
+        double groundHeight = PhotonVisionParamsNT.GROUND_HEIGHT_METERS.getValue();
+        double distanceScale = PhotonVisionParamsNT.DISTANCE_SCALE_FACTOR.getValue();
+
         // Convert to radians
         double yawRad = Units.degreesToRadians(detection.yaw);
         double pitchRad = Units.degreesToRadians(detection.pitch);
         double cameraPitchRad = Units.degreesToRadians(cameraPitch);
-        
+
         // Calculate distance using trigonometry
         double heightDiff = cameraHeight - groundHeight;
         double totalPitch = pitchRad + cameraPitchRad;
-        double distance = Math.abs(totalPitch) > 0.01 ? 
+        double distance = Math.abs(totalPitch) > 0.01 ?
             Math.abs(heightDiff / Math.tan(totalPitch)) * distanceScale : 1.0;
-        
+
         // Calculate 3D position (correct for PhotonVision coordinate system)
         double x = distance * Math.cos(yawRad);     // Forward/backward
         double y = -distance * Math.sin(yawRad);    // Left/right (inverted for robot coords)
         double z = -(cameraHeight - groundHeight);  // Height relative to camera
-        
+
         // Create and transform pose
         Pose3d cameraRelativePose = new Pose3d(x, y, z, new Rotation3d());
         Pose3d robotRelativePose = transformCameraToRobot(cameraRelativePose);
-        
+
         // Log essential data
         Logger.recordOutput("PhotonVision/Camera" + detection.cameraId + "/Distance", distance);
         Logger.recordOutput("PhotonVision/Camera" + detection.cameraId + "/RobotRelativePose3D", robotRelativePose);
-        
+
         return robotRelativePose;
     }
     
@@ -355,20 +352,20 @@ public class PhotonVisionSubsystem extends SubsystemBase {
      */
     private Pose3d transformCameraToRobot(Pose3d cameraRelativePose) {
         // Get camera position relative to robot center from constants
-        double cameraToRobotX = PhotonVisionParams.CAMERA_TO_ROBOT_X;
-        double cameraToRobotY = PhotonVisionParams.CAMERA_TO_ROBOT_Y;
-        double cameraToRobotZ = PhotonVisionParams.CAMERA_HEIGHT_METERS; // Use camera height for Z
-        double cameraYawDegrees = PhotonVisionParams.CAMERA_PITCH_DEGREES; // Use camera pitch as yaw rotation
-        
+        double cameraToRobotX = PhotonVisionParamsNT.CAMERA_TO_ROBOT_X.getValue();
+        double cameraToRobotY = PhotonVisionParamsNT.CAMERA_TO_ROBOT_Y.getValue();
+        double cameraToRobotZ = PhotonVisionParamsNT.CAMERA_HEIGHT_METERS.getValue();
+        double cameraYawDegrees = PhotonVisionParamsNT.CAMERA_YAW_DEGREES.getValue();
+
         // Create the camera-to-robot transform
         Translation3d cameraToRobotTranslation = new Translation3d(cameraToRobotX, cameraToRobotY, cameraToRobotZ);
         Rotation3d cameraToRobotRotation = new Rotation3d(0, 0, Units.degreesToRadians(cameraYawDegrees));
         Transform3d cameraToRobotTransform = new Transform3d(cameraToRobotTranslation, cameraToRobotRotation);
-        
+
         // Apply the transform to get robot-relative pose
         return cameraRelativePose.transformBy(cameraToRobotTransform);
     }
-    
+
     /**
      * Projects all detected targets to 3D poses relative to the robot center
      * @return List of 3D poses for all detected targets relative to robot center
