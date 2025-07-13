@@ -52,12 +52,20 @@ public enum SuperstructureState {
     () -> EndEffectorArmConstants.CORAL_OUTTAKE_VOLTAGE.get())),
     CORAL_INDEXED_INTAKE(createState(Preset.CORAL_INDEXED_INTAKE,
         () -> IntakeConstants.INTAKE_VOLTAGE.get(), 
-        () -> IntakeConstants.INDEX_HOLD_VOLTAGE.get(),
+        () -> IntakeConstants.INDEX_OUTTAKE_VOLTAGE.get(),
         () -> EndEffectorArmConstants.ALGAE_HOLD_VOLTAGE.get())),
     CORAL_STATION_INTAKE(createState(Preset.CORAL_STATION_INTAKE,
         () -> 0, 
         () -> 0,
-        () -> EndEffectorArmConstants.CORAL_INTAKE_VOLTAGE.get()));
+        () -> EndEffectorArmConstants.CORAL_INTAKE_VOLTAGE.get())),
+
+    // Safe outtake positions
+    SAFE_OUTTAKE(createState(
+        Preset.SAFE_OUTTAKE,
+        () -> IntakeConstants.OUTTAKE_VOLTAGE.get(),
+        () -> -IntakeConstants.INDEX_OUTTAKE_VOLTAGE.get(),
+        () -> EndEffectorArmConstants.CORAL_OUTTAKE_VOLTAGE.get()));
+
 
     private final SuperstructureStateData value;
 
