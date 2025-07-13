@@ -238,8 +238,6 @@ public class Superstructure extends SubsystemBase {
         // 2. update next (to the next target state, which should be found through bfs)
         // 3. update edgeCommand (the command we should process to reach next)
         if (edgeCommand == null || !edgeCommand.getCommand().isScheduled()) {
-            // why we need this if statement ?
-            // from my perspective, if next is null in this case, we should abort the process
             // this part complete 1.
             if (next != null) {
                 // change the old state to current state since we already complete the command
@@ -299,6 +297,28 @@ public class Superstructure extends SubsystemBase {
         return runGoal(() -> SuperstructureState.IDLE)
                 .until(this::poseAtGoal)
                 .andThen(elevator.zeroElevator());
+    }
+
+    /**
+     * Command to toggle the intake pose between default and alternate positions
+     * for stow states, score states, idle, and avoid states.
+     * @return Command that toggles intake poses
+     */
+    public Command toggleIntakePose() {
+        return runOnce(() -> {
+            boolean newState = !SuperstructurePose.getIntakeToggleState();
+            SuperstructurePose.setIntakeToggleState(newState);
+            System.out.println("Intake pose toggled to: " + (newState ? "ALTERNATE" : "DEFAULT"));
+        });
+    }
+
+    /**
+     * Gets the current intake toggle state
+     * @return true if using alternate intake poses, false if using default poses
+     */
+    @AutoLogOutput(key = "Superstructure/IntakeToggleState")
+    public boolean getIntakeToggleState() {
+        return SuperstructurePose.getIntakeToggleState();
     }
 
     public void setGoal(SuperstructureState goal) {

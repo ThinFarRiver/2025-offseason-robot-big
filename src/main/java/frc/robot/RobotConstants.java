@@ -392,6 +392,30 @@ public final class RobotConstants {
   /**
    * Constants related to the robot's intake subsystem.
    */
+  public static class SuperstructureConstants {
+    /**
+     * Tunable parameters for intake pose toggling functionality.
+     * These constants control the alternate intake angles for specific superstructure states.
+     */
+    @NTParameter(tableName = "Params/Superstructure")
+    public static final class IntakeToggleParams {
+      // Stow states alternate intake angles
+      static final double CORAL_STOW_ALT_INTAKE = 110.0;
+      static final double ALGAE_STOW_ALT_INTAKE = 80.0;
+      
+      // Score states alternate intake angles  
+      static final double L1_SHOOT_SIDE_ALT_INTAKE = 40.0;
+      static final double L2_ALT_INTAKE = 110.0;
+      static final double L3_ALT_INTAKE = 110.0;
+      static final double L4_ALT_INTAKE = 110.0;
+      static final double NET_SCORE_ALT_INTAKE = 40.0;
+      
+      // Basic states alternate intake angles
+      static final double IDLE_ALT_INTAKE = 110.0;
+      static final double AVOID_ALT_INTAKE = 110.0;
+    }
+  }
+
   public static class IntakeConstants {
     public static final int INTAKE_MOTOR_ID = 15;
     public static final int INDEX_MOTOR_ID = 19;

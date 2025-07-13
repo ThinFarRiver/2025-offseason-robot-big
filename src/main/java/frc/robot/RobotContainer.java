@@ -393,6 +393,7 @@ driverController.x().whileTrue(AutoActions.chase().alongWith(
             })
             .andThen(
                 new ReefAimCommand(swerve, indicatorSubsystem)));
+    testerController.back().onTrue(superstructure.toggleIntakePose());
 
   }
 
