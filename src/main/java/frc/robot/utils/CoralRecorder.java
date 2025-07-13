@@ -204,9 +204,9 @@ public class CoralRecorder {
 
   @NTParameter(tableName = "Params/CoralRecorder")
   public static class CoralRecorderParams {
-    static final double sameCoralRadiusMeters = 0.20;
+    static final double sameCoralRadiusMeters = 0.25;
     static final double confidenceStart = 0.45;
-    static final double confidenceTimeDecay = 0.3; // decay in confidence per second
+    static final double confidenceTimeDecay = 0.7; // decay in confidence per second
     static final double confidenceTimeObservationGain = 8.0; // increase in confidence per second when observed
     static final double confidenceNewObservationProportion = 0.9; // starting confidence for a new observation
     static final double confidenceThreshold = 0.6;

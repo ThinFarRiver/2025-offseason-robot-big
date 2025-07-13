@@ -21,7 +21,6 @@ public class AimGoalSupplier {
   @Setter
   private static ReefFace selectedTarget = ReefFace.NearFlat;
 
-
   /**
    * Calculates the optimal drive target position based on the robot's current position and goal position
    *

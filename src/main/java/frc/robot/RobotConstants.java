@@ -374,7 +374,7 @@ public final class RobotConstants {
     public static final TunableNumber OMEGA_TOLERANCE_DEGREES = new TunableNumber("AIM/OMEGA_TOLERANCE_DEGREES", 1);
     public static final Measure<LinearVelocityUnit> MAX_AIMING_SPEED = MetersPerSecond.of(3.5);
     public static final Measure<LinearAccelerationUnit> MAX_AIMING_ACCELERATION = MetersPerSecondPerSecond.of(10);
-    public static final TunableNumber Edge_Case_Max_Delta = new TunableNumber("AIM/MAX DELTA", 0.3);
+    public static final TunableNumber Edge_Case_Max_Delta = new TunableNumber("AIM/MAX DELTA", 0.35);
     public static final TunableNumber ROBOT_TO_ALGAE_METERS = new TunableNumber("AIM/ROBOT_TO_ALGAE_METERS", 0.489);
     public static final TunableNumber ALGAE_TO_TAG_METERS = new TunableNumber("AIM/ALGAE_TO_TAG_METERS", 0);
     public static final TunableNumber HEXAGON_DANGER_DEGREES = new TunableNumber("AIM/HEXAGON_DANGER_DEGREES", 45);
@@ -455,11 +455,11 @@ public final class RobotConstants {
      * Constants for the intake pivot motor gains in the intake subsystem.
      */
     public static class IntakePivotGainsClass {
-      public static final TunableNumber INTAKE_PIVOT_KP = new TunableNumber("INTAKE_PIVOT PID/kp", 4);
-      public static final TunableNumber INTAKE_PIVOT_KI = new TunableNumber("INTAKE_PIVOT PID/ki", 0);
-      public static final TunableNumber INTAKE_PIVOT_KD = new TunableNumber("INTAKE_PIVOT PID/kd", 0.1);
+      public static final TunableNumber INTAKE_PIVOT_KP = new TunableNumber("INTAKE_PIVOT PID/kp", 4.7);
+      public static final TunableNumber INTAKE_PIVOT_KI = new TunableNumber("INTAKE_PIVOT PID/ki", 0.5);
+      public static final TunableNumber INTAKE_PIVOT_KD = new TunableNumber("INTAKE_PIVOT PID/kd", 0.02);
       public static final TunableNumber INTAKE_PIVOT_KS = new TunableNumber("INTAKE_PIVOT PID/ks", 0);
-      public static final TunableNumber INTAKE_PIVOT_KG = new TunableNumber("INTAKE_PIVOT PID/kg", -0.015);
+      public static final TunableNumber INTAKE_PIVOT_KG = new TunableNumber("INTAKE_PIVOT PID/kg", -0.035);
 
       public static final TunableNumber INTAKE_PIVOT_CRUISEVEL = new TunableNumber("INTAKE_PIVOT/cruiseVel", 100);
       public static final TunableNumber INTAKE_PIVOT_ACC = new TunableNumber("INTAKE_PIVOT/acc", 100);
@@ -568,9 +568,9 @@ public final class RobotConstants {
       static final double pivotTolerance = 3.5;
 
       // Motion Magic parameters
-      static final double motionMagicCruiseVelocity = 10000000; // degrees/second
-      static final double motionMagicAcceleration = 6300; // degrees/second^2
-      static final double motionMagicJerk = 70000; // degrees/second^3
+      static final double motionMagicCruiseVelocity = 1200.0; // degrees/second
+      static final double motionMagicAcceleration = 10000.0; // degrees/second^2
+      static final double motionMagicJerk = 60000.0; // degrees/second^3
 
       // Roller voltages for different operations
       static final double coralIntakeVoltage = 12.0;
@@ -587,13 +587,13 @@ public final class RobotConstants {
       static final double coralShootDelayTime = 0.2;
 
       // Pivot motor gains
-      static final double pivotKP = 100;
+      static final double pivotKP = 220;
       static final double pivotKI = 0.0;
-      static final double pivotKD = 05;
+      static final double pivotKD = 6.0;
       static final double pivotKA = 0.001; // Use calculated theoretical value
       static final double pivotKV = 0.2145; // Use calculated theoretical value
       static final double pivotKS = 0;
-      static final double pivotKG = -0.17;
+      static final double pivotKG = -0.18;
 
       // Roller motor gains (currently open loop)
       static final double rollerKP = 0.0;

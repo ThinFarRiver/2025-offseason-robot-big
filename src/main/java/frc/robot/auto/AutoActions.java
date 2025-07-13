@@ -81,10 +81,10 @@ public class AutoActions {
       1.0, Rotation2d.fromDegrees(26)
   );
 
-  private static Swerve swerve;
-  private static Superstructure superstructure;
-  private static IndicatorSubsystem indicator;
-  private static PhotonVisionSubsystem photon;
+  public static Swerve swerve;
+  public static Superstructure superstructure;
+  public static IndicatorSubsystem indicator;
+  public static PhotonVisionSubsystem photon;
 
   public static void init(Swerve swerve, Superstructure superstructure, IndicatorSubsystem indicator, PhotonVisionSubsystem photon) {
     AutoActions.swerve = swerve;
@@ -131,8 +131,8 @@ public class AutoActions {
 
   public static Command driveForwardBlind(double vx, double timeS) {
     return Commands.run(() -> {
-      swerve.runTwist(new ChassisSpeeds(vx, 0.0, 0.0));
-    }, swerve)
+          swerve.runTwist(new ChassisSpeeds(vx, 0.0, 0.0));
+        }, swerve)
         .withTimeout(Seconds.of(timeS))
         .finallyDo(swerve::runStop);
   }
@@ -147,8 +147,8 @@ public class AutoActions {
 
   public static PathPlannerPath generatePath(List<Pose2d> waypoints, List<RotationTarget> rotationTargets, double endVelMps) {
     PathConstraints constraints = new PathConstraints(
-        4.6, 15.0,
-        15.0, 45.0, 12.0
+        4.6, 6.0,
+        15.0, 40.0, 12.0
     );
     List<Waypoint> pts = PathPlannerPath.waypointsFromPoses(waypoints);
     Pose2d lastPose = waypoints.get(waypoints.size() - 1);
@@ -382,13 +382,13 @@ public class AutoActions {
 
     if (hasAlgae) {
       // When we have algae, we need both algae AND indexed coral
-      return superstructure.hasAlgae() && superstructure.indexedCoral();
+      return superstructure.hasAlgae() && superstructure.hasIndexedCoral();
     } else if (!inDangerZone) {
       // When not in danger zone, we just need coral
       return superstructure.hasCoral();
     } else {
       // When in danger zone (without algae), we need indexed coral
-      return superstructure.indexedCoral();
+      return superstructure.hasIndexedCoral();
     }
   }
 
@@ -449,8 +449,8 @@ public class AutoActions {
     return Math.abs(dirRobotCoral.getDegrees()) < AutoParamsNT.CoralInSightDegs.getValue();
   }
 
-  public static boolean isHasCoral() {
-    return superstructure.hasCoral();
+  public static boolean isControlCoral() {
+    return superstructure.hasCoral() || superstructure.hasIndexedCoral();
   }
 
   @NTParameter(tableName = "Params/Auto")
@@ -466,11 +466,11 @@ public class AutoActions {
 
     static final double CoralInSightDegs = 80.0;
 
-    static final double RightTriangleX = 3.0;
-    static final double RightTriangleY = 2.7;
-    static final double LeftTriangleX = 3.0;
-    static final double LeftTriangleY = 5.3;
-    static final double BoundaryOffset = 0.9;
+    static final double RightTriangleX = 2.5;
+    static final double RightTriangleY = 1.7;
+    static final double LeftTriangleX = 2.5;
+    static final double LeftTriangleY = 6.3;
+    static final double BoundaryOffset = 0.6;
   }
 
 }

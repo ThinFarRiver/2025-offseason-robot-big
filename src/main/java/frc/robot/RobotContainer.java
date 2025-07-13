@@ -14,7 +14,6 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -203,6 +202,7 @@ public class RobotContainer {
     AutoSelector.getInstance().registerAuto("Right 5C1A", new AutoRight5C1A());
     AutoSelector.getInstance().registerAuto("Left 5C1A", new AutoLeft5C1A());
     AutoSelector.getInstance().registerAuto("Left 1C", new AutoLeft1C());
+    AutoSelector.getInstance().registerAuto("Left 2C", new AutoLeft2C());
 
 
     //CommandScheduler.getInstance().unregisterSubsystem(climberSubsystem);
@@ -336,18 +336,23 @@ public class RobotContainer {
 //     new ReefAimCommand(swerve, indicatorSubsystem)
 //     )
 //     );
-driverController.x().whileTrue(AutoActions.chase().alongWith(
-  Commands.runOnce(
-      () -> {
-        if(AutoActions.isCoralInSight()) {
-          indicatorSubsystem.setPattern(IndicatorIO.Patterns.ASSISTED_INTAKE);
-        } else {
-          indicatorSubsystem.setPattern(IndicatorIO.Patterns.INTAKE);
-        }
-      }
-  ,indicatorSubsystem).repeatedly()
-));
-
+    driverController.x().whileTrue(
+        Commands.deadline(
+            AutoActions.chase(),
+            Commands.run(
+                () -> {
+                  if(AutoActions.isCoralInSight()) {
+                    indicatorSubsystem.setPattern(IndicatorIO.Patterns.ASSISTED_INTAKE);
+                  } else {
+                    indicatorSubsystem.setPattern(IndicatorIO.Patterns.INTAKE);
+                  }
+                },indicatorSubsystem)
+        ).andThen(
+            Commands.run(
+                () -> indicatorSubsystem.setPattern(IndicatorIO.Patterns.AFTER_INTAKE)
+            )
+        )
+    );
   }
 
   private void configureStreamDeckBindings() {
@@ -492,13 +497,13 @@ driverController.x().whileTrue(AutoActions.chase().alongWith(
 
     if (hasAlgae) {
       // When we have algae, we need both algae AND indexed coral
-      return superstructure.hasAlgae() && superstructure.indexedCoral();
+      return superstructure.hasAlgae() && superstructure.hasIndexedCoral();
     } else if (!inDangerZone) {
       // When not in danger zone, we just need coral
       return superstructure.hasCoral();
     } else {
       // When in danger zone (without algae), we need indexed coral
-      return superstructure.indexedCoral();
+      return superstructure.hasIndexedCoral();
     }
   }
 

@@ -60,8 +60,6 @@ public class DecisionTree {
    *    and schedule the first target whose supplier returns true.
    */
   public void tick() {
-    CommandScheduler scheduler = CommandScheduler.getInstance();
-
     // 1. start the root if nothing is running yet
     if (currentCommand == null) {
       if (rootCommand != null) {
@@ -72,7 +70,7 @@ public class DecisionTree {
     }
 
     // 2. if currentCommand is done, try transitions
-    if (!scheduler.isScheduled(currentCommand)) {
+    if (currentCommand.isFinished()) {
       for (BooleanSupplier edge : graph.outgoingEdgesOf(currentCommand)) {
         if (edge.getAsBoolean()) {
           Command next = graph.getEdgeTarget(edge);
@@ -89,7 +87,8 @@ public class DecisionTree {
     if (currentCommand == null) {
       return true;
     }
-    boolean done = currentCommand.isScheduled();
+
+    boolean done = currentCommand.isFinished();
     boolean terminal = graph.outgoingEdgesOf(currentCommand).isEmpty();
     return done && terminal;
   }

@@ -15,11 +15,14 @@ import frc.robot.subsystems.indicator.IndicatorIO;
 import frc.robot.subsystems.indicator.IndicatorSubsystem;
 import frc.robot.subsystems.superstructure.DestinationSupplier;
 import frc.robot.subsystems.superstructure.Superstructure;
+import frc.robot.subsystems.superstructure.SuperstructurePose;
+import frc.robot.subsystems.superstructure.SuperstructureState;
 import lib.ironpulse.math.MathTools;
 import lib.ironpulse.swerve.Swerve;
 import lib.ironpulse.swerve.SwerveLimit;
 import lib.ironpulse.utils.Logging;
 import lib.ntext.NTParameter;
+import lombok.extern.java.Log;
 import org.littletonrobotics.junction.Logger;
 
 import static edu.wpi.first.math.util.Units.degreesToRadians;
@@ -62,10 +65,24 @@ public class ReefAimCommand extends Command {
     this(swerve, indicatorSubsystem, false);
   }
 
+  private boolean useFast() {
+    return DestinationSupplier.getInstance().getCoralScoreState() != SuperstructureState.L4;
+  }
+
   @Override
   public void initialize() {
     // tuning
-    if (RobotConstants.TUNING) {
+    if(useFast()) {
+      translationController.setP(ReefAimCommandParamsNT.translationFastKp.getValue());
+      translationController.setI(ReefAimCommandParamsNT.translationFastKi.getValue());
+      translationController.setIZone(ReefAimCommandParamsNT.translationFastKiZone.getValue());
+      translationController.setD(ReefAimCommandParamsNT.translationFastKd.getValue());
+
+      rotationController.setP(ReefAimCommandParamsNT.rotationKp.getValue());
+      rotationController.setI(ReefAimCommandParamsNT.rotationKi.getValue());
+      rotationController.setIZone(ReefAimCommandParamsNT.rotationKiZone.getValue());
+      rotationController.setD(ReefAimCommandParamsNT.rotationKd.getValue());
+    } else {
       translationController.setP(ReefAimCommandParamsNT.translationKp.getValue());
       translationController.setI(ReefAimCommandParamsNT.translationKi.getValue());
       translationController.setIZone(ReefAimCommandParamsNT.translationKiZone.getValue());
@@ -75,10 +92,6 @@ public class ReefAimCommand extends Command {
       rotationController.setI(ReefAimCommandParamsNT.rotationKi.getValue());
       rotationController.setIZone(ReefAimCommandParamsNT.rotationKiZone.getValue());
       rotationController.setD(ReefAimCommandParamsNT.rotationKd.getValue());
-      rotationController.setTolerance(
-          ReefAimCommandParamsNT.rotationOnTargetToleranceDegree.getValue() / 180.0f * Math.PI,
-          ReefAimCommandParamsNT.rotationOnTargetVelocityToleranceDegreesPerSecond.getValue() / 180.0f * Math.PI
-      );
     }
 
     // get current state
@@ -108,6 +121,11 @@ public class ReefAimCommand extends Command {
 
   @Override
   public void execute() {
+    if(useFast()) {
+      Logging.warn(kTag, "Use Fast!");
+    } else {
+      Logging.warn(kTag, "Use Slow!");
+    }
     poseWorldRobot = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
     poseWorldTarget = AimGoalSupplier.getDriveTarget(poseWorldRobot, finalDestinationPose);
     Pose2d poseRobotTarget = poseWorldTarget.relativeTo(poseWorldRobot);
@@ -130,9 +148,17 @@ public class ReefAimCommand extends Command {
 
     // set limit
     double dCurr = finalDestinationPose.relativeTo(poseWorldRobot).getTranslation().getNorm(); // use final destination
-    double vFar = ReefAimCommandParamsNT.translationVelocityMaxFar.getValue();
-    double vNear = ReefAimCommandParamsNT.translationVelocityMaxNear.getValue();
-    double dChange = ReefAimCommandParamsNT.translationParamsChangeDistance.getValue();
+    double vFar, vNear, dChange;
+    if(useFast()) {
+      vFar = ReefAimCommandParamsNT.translationFastVelocityMaxFar.getValue();
+      vNear = ReefAimCommandParamsNT.translationFastVelocityMaxNear.getValue();
+      dChange = ReefAimCommandParamsNT.translationFastParamsChangeDistance.getValue();
+    } else {
+      vFar = ReefAimCommandParamsNT.translationVelocityMaxFar.getValue();
+      vNear = ReefAimCommandParamsNT.translationVelocityMaxNear.getValue();
+      dChange = ReefAimCommandParamsNT.translationParamsChangeDistance.getValue();
+    }
+
     double maxTranslationVelocityMps = dCurr > dChange ? vFar : vNear + dCurr / dChange * (vFar - vNear);
     vRT_norm = MathUtil.clamp(vRT_norm, 0.0, maxTranslationVelocityMps);
     Translation2d vRT = new Translation2d(vRT_norm, pRT_dir);
@@ -159,22 +185,43 @@ public class ReefAimCommand extends Command {
   public boolean isFinished() {
     Pose2d poseRobotTarget = poseWorldTarget.relativeTo(poseWorldRobot);
     Rotation3d imuRotation = swerve.getEstimatedPose().getRotation();
-    xOnTarget = epsilonEquals(
-        poseRobotTarget.getTranslation().getX(), 0.0,
-        ReefAimCommandParamsNT.xOnTargetMeter.getValue()
-    );
-    xStationary = epsilonEquals(
-        velocityRobot.getTranslation().getX(), 0.0,
-        ReefAimCommandParamsNT.xStationaryMetersPerSecond.getValue()
-    );
-    yOnTarget = epsilonEquals(
-        poseRobotTarget.getTranslation().getY(), 0.0,
-        ReefAimCommandParamsNT.yOnTargetMeter.getValue()
-    );
-    yStationary = epsilonEquals(
-        velocityRobot.getTranslation().getY(), 0.0,
-        ReefAimCommandParamsNT.yStationaryMetersPerSecond.getValue()
-    );
+    if(useFast()) {
+      xOnTarget = epsilonEquals(
+          poseRobotTarget.getTranslation().getX(), 0.0,
+          ReefAimCommandParamsNT.yOnTargetFastMeter.getValue()
+      );
+      yOnTarget = epsilonEquals(
+          poseRobotTarget.getTranslation().getY(), 0.0,
+          ReefAimCommandParamsNT.yOnTargetFastMeter.getValue()
+      );
+      xStationary = epsilonEquals(
+          velocityRobot.getTranslation().getX(), 0.0,
+          ReefAimCommandParamsNT.xStationaryFastMetersPerSecond.getValue()
+      );
+      yStationary = epsilonEquals(
+          velocityRobot.getTranslation().getY(), 0.0,
+          ReefAimCommandParamsNT.yStationaryFastMetersPerSecond.getValue()
+      );
+    } else {
+      xOnTarget = epsilonEquals(
+          poseRobotTarget.getTranslation().getX(), 0.0,
+          ReefAimCommandParamsNT.xOnTargetMeter.getValue()
+      );
+      yOnTarget = epsilonEquals(
+          poseRobotTarget.getTranslation().getY(), 0.0,
+          ReefAimCommandParamsNT.yOnTargetMeter.getValue()
+      );
+      xStationary = epsilonEquals(
+          velocityRobot.getTranslation().getX(), 0.0,
+          ReefAimCommandParamsNT.xStationaryMetersPerSecond.getValue()
+      );
+      yStationary = epsilonEquals(
+          velocityRobot.getTranslation().getY(), 0.0,
+          ReefAimCommandParamsNT.yStationaryMetersPerSecond.getValue()
+      );
+    }
+
+
     rotationOnTarget = epsilonEquals(
         poseRobotTarget.getRotation().getDegrees(),
         0.0,
@@ -232,6 +279,14 @@ public class ReefAimCommand extends Command {
     static final double translationParamsChangeDistance = 1.5;
     static final double translationAccelerationMax = 13.0;
 
+    static final double translationFastKp = 3.6;
+    static final double translationFastKi = 0.0;
+    static final double translationFastKiZone = 0.00;
+    static final double translationFastKd = 0.15;
+    static final double translationFastVelocityMaxFar = 4.6;
+    static final double translationFastVelocityMaxNear = 3.6;
+    static final double translationFastParamsChangeDistance = 1.8;
+
     static final double rotationKp = 4.5;
     static final double rotationKi = 0.0;
     static final double rotationKiZone = 0.0;
@@ -243,7 +298,13 @@ public class ReefAimCommand extends Command {
     static final double yOnTargetMeter = 0.02;
     static final double xStationaryMetersPerSecond = 0.35;
     static final double yStationaryMetersPerSecond = 0.25;
-    static final double imuStationaryDeg = 4;
+
+    static final double xOnTargetFastMeter = 0.04;
+    static final double yOnTargetFastMeter = 0.035;
+    static final double xStationaryFastMetersPerSecond = 0.40;
+    static final double yStationaryFastMetersPerSecond = 0.30;
+
+    static final double imuStationaryDeg = 4.0;
     static final double rotationOnTargetToleranceDegree = 1.5;
     static final double rotationOnTargetVelocityToleranceDegreesPerSecond = 15.0;
     static final double rotationAdjustmentMaxDegree = 0.0;

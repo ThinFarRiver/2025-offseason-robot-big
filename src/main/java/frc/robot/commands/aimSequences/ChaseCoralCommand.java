@@ -47,6 +47,7 @@ public class ChaseCoralCommand extends Command {
     turnController.reset();
     targetCoralId = null;
     state = State.ACTIVE_CHASING;
+    blindTimer.reset();
     lastDirection = RobotStateRecorder
         .getPoseDriverRobotCurrent().toPose2d()
         .getRotation();
@@ -100,11 +101,7 @@ public class ChaseCoralCommand extends Command {
       blindTimer.reset();
     } else {
       // keep moving in last known direction
-      forwardVel = MathUtil.clamp(
-          forwardVel,
-          0.0,
-          ChaseCoralCommandParamsNT.blindChaseMaxVelocityMps.getValue()
-      );
+      forwardVel = 0.0;
       turnVel = 0.0;
     }
 
@@ -136,13 +133,13 @@ public class ChaseCoralCommand extends Command {
 
   @NTParameter(tableName = "Params/Commands/ChaseCoralCommand")
   public static class ChaseCoralCommandParams {
-    static final double driveKp = 2.5;
+    static final double driveKp = 3.0;
     static final double driveKi = 0.0;
     static final double driveKd = 0.1;
-    static final double turnKp = 6.0;
+    static final double turnKp = 6.5;
     static final double turnKi = 0.0;
     static final double turnKd = 0.3;
-    static final double activeChaseMaxVelocityMps = 2.5;
+    static final double activeChaseMaxVelocityMps = 2.7;
     static final double blindChaseMaxTimeSeconds = 0.0;
     static final double blindChaseMaxVelocityMps = 1.5;
   }

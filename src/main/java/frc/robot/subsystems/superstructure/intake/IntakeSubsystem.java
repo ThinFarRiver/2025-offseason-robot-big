@@ -36,7 +36,7 @@ public class IntakeSubsystem {
 
     @Getter
     @AutoLogOutput(key = "Intake/setPoint")
-    private double wantedAngle = 0.0;
+    private double wantedAngle = 130.0;
     @Getter
     @AutoLogOutput(key = "Intake/atGoal")
     private boolean atGoal = false;

@@ -2,17 +2,14 @@ package frc.robot.subsystems.superstructure;
 
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.RobotConstants;
 import frc.robot.RobotStateRecorder;
 import frc.robot.commands.aimSequences.AimGoalSupplier;
 import frc.robot.subsystems.superstructure.elevator.ElevatorSubsystem;
 import frc.robot.subsystems.superstructure.endeffectorarm.EndEffectorArmSubsystem;
 import frc.robot.subsystems.superstructure.intake.IntakeSubsystem;
-import frc.robot.utils.BlocklessEitherCommand;
 import frc.robot.utils.LoggedTracer;
 import lib.ironpulse.utils.TimeDelayedBoolean;
 import lombok.Builder;
@@ -483,7 +480,7 @@ public class Superstructure extends SubsystemBase {
         return endEffectorArm.isHasAlgae();
     }
 
-    public boolean indexedCoral() {
+    public boolean hasIndexedCoral() {
         return intake.isIndexRollerHasCoral();
     }
 
@@ -547,7 +544,7 @@ public class Superstructure extends SubsystemBase {
                                 Commands.waitUntil(this::poseAtGoal)
                         );
             } else if (statesAboveFlip.contains(from)) {
-                return runSuperstructurePose(to.getValue().getPose())
+                return runSuperstructurePose(to.getValue().getPose()).alongWith(runSuperstructureRollers(to))
                         .andThen(Commands.waitUntil(endEffectorArm::isAtGoal));
             } else if (statesBelowNoFlip.contains(from)) {
                 System.out.println(goal.getValue().getPose().elevatorHeight() + "" + goal.getValue().getPose().endEffectorAngle());
@@ -556,12 +553,13 @@ public class Superstructure extends SubsystemBase {
                         // fly-by case: set elevator directly to goal
                         runElevator(() -> FLYBY_HEIGHT.get())
                                 .alongWith(
+                                        runSuperstructureRollers(to),
                                         runEndEffectorArm(to.getValue().getPose().endEffectorAngle()),
                                         runIntake(to.getValue().getPose().intakeAngle())
                                 )
                                 .andThen(Commands.waitUntil(elevator::isSafeToFlip)),
                         // usual case: move superstructure then wait until it’s safe to flip
-                        runSuperstructurePose(to.getValue().getPose())
+                        runSuperstructurePose(to.getValue().getPose()).alongWith(runSuperstructureRollers(to))
                                 .andThen(Commands.waitUntil(elevator::isAtGoal)),
                         // only flyby when we go from BNF -> AF
                         () -> goal.equals(L4) || goal.equals(NET_SCORE)
