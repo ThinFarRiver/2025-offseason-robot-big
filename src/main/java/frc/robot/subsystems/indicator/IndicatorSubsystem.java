@@ -2,6 +2,7 @@ package frc.robot.subsystems.indicator;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.utils.LoggedTracer;
 import lombok.Getter;
@@ -18,6 +19,7 @@ public class IndicatorSubsystem extends SubsystemBase {
 
     public IndicatorSubsystem(IndicatorIO io) {
         this.io = io;
+        resetLed();
     }
 
     public void setPattern(IndicatorIO.Patterns pattern) {
@@ -63,5 +65,9 @@ public class IndicatorSubsystem extends SubsystemBase {
 
     public void resetToLastPattern() {
         setPattern(lastPattern);
+    }
+
+    public Command indicateWithTimeout(IndicatorIO.Patterns pattern, double timeoutSeconds) {
+        return null;
     }
 }

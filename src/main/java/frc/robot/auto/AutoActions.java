@@ -5,11 +5,14 @@ import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.*;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.FieldConstants;
@@ -37,18 +40,19 @@ import java.util.Collections;
 import java.util.List;
 
 import static edu.wpi.first.units.Units.*;
+import static frc.robot.RobotConstants.LOOPER_DT;
 import static frc.robot.commands.aimSequences.AimGoalSupplier.isInHexagonalReefDangerZone;
 import static lib.ironpulse.math.MathTools.cross;
 import static lib.ironpulse.math.MathTools.toAngle;
 
 public class AutoActions {
   private static final Pose2d kLeftIntakePoint = new Pose2d(
-      new Translation2d(1.4, 6.8),
+      new Translation2d(1.5, 6.7),
       Rotation2d.fromDegrees(144)
   );
   private static final Pose2d kLeftBackoff = new Pose2d(
-      new Translation2d(2.7, 6.2),
-      Rotation2d.fromDegrees(170)
+      new Translation2d(2.79, 5.81),
+      Rotation2d.fromDegrees(144)
   );
   private static final Pose2d kLeftEnd = new Pose2d(
       new Translation2d(2.50, 5.3),
@@ -63,17 +67,18 @@ public class AutoActions {
 
 
   private static final Pose2d kRightIntakePoint = new Pose2d(
-      new Translation2d(1.4, 1.2),
+      new Translation2d(1.5, 1.3),
       Rotation2d.fromDegrees(-144)
   );
   private static final Pose2d kRightBackoff = new Pose2d(
-      new Translation2d(2.7, 1.8),
+      new Translation2d(2.79, FieldConstants.fieldWidth - 5.81),
       Rotation2d.fromDegrees(180.0)
   );
   private static final Pose2d kRightEnd = new Pose2d(
       new Translation2d(2.50, 2.7),
       Rotation2d.fromDegrees(180)
   );
+
   private static final RotationTarget kRightBackoffPointAngle = new RotationTarget(
       0.45, Rotation2d.fromDegrees(10)
   );
@@ -128,7 +133,6 @@ public class AutoActions {
     });
   }
 
-
   public static Command driveForwardBlind(double vx, double timeS) {
     return Commands.run(() -> {
           swerve.runTwist(new ChassisSpeeds(vx, 0.0, 0.0));
@@ -167,7 +171,7 @@ public class AutoActions {
   }
 
   public static PathPlannerPath generatePath(List<Pose2d> waypoints, List<RotationTarget> rotationTargets, double endVelMps) {
-    return generatePath(waypoints, rotationTargets, 4.5, 15.0, endVelMps);
+    return generatePath(waypoints, rotationTargets, 4.5, 7.0, endVelMps);
   }
 
   public static Command driveToIntakePoint(boolean isLeft, boolean shouldBackoff) {
@@ -185,7 +189,7 @@ public class AutoActions {
           ? List.of(backoffAngle, decisionAngle)
           : List.of(decisionAngle);
 
-      PathPlannerPath path = generatePath(waypoints, rotationTargets, 4.0, 7.0, 0.0);
+      PathPlannerPath path = generatePath(waypoints, rotationTargets, 4.5, 7.0, 0.0);
       return Commands.deadline(
           followPath(path),
           applySwerveLimit()
@@ -194,17 +198,24 @@ public class AutoActions {
   }
 
   public static Command driveToBackoffPoint(boolean isLeft) {
-    return swerve.defer(() -> {
-      Pose2d current = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
-      Pose2d backoff = AllianceFlipUtil.apply(isLeft ? kLeftBackoff : kRightBackoff);
-      RotationTarget backoffAngle = isLeft ? kLeftBackoffPointAngle : kRightBackoffPointAngle;
-
-      List<Pose2d> waypoints = List.of(current, backoff);
-      List<RotationTarget> rotationTargets = List.of(backoffAngle);
-
-      PathPlannerPath path = generatePath(waypoints, rotationTargets, 4.5, 12.0, 0.0);
-      return followPath(path);
-    });
+    return swerve.defer(
+        () -> SwerveCommands.driveToPose(
+            swerve,
+            RobotStateRecorder::getPoseWorldRobotCurrent,
+            () -> new Pose3d(AllianceFlipUtil.apply(isLeft ? kLeftBackoff : kRightBackoff)),
+            RobotStateRecorder::getVelocityWorldRobotCurrent,
+            new ProfiledPIDController(
+                3.5, 0.0, 0.1,
+                new TrapezoidProfile.Constraints(4.5, 8.0)
+            ),
+            new ProfiledPIDController(
+                5.0, 0.0, 0.1,
+                new TrapezoidProfile.Constraints(15.0, 45.0)
+            ),
+            Meters.of(0.15),
+            Radian.of(0.10)
+        )
+    );
   }
 
   public static Command driveToEndPoint(boolean isLeft) {
@@ -228,9 +239,9 @@ public class AutoActions {
           swerve.runTwist(vel);
         },
         new PPHolonomicDriveController(
-            new PIDConstants(5.5, 0.0, 0.1),
+            new PIDConstants(5.5, 0.0, 0.0),
             new PIDConstants(3.0, 0.0, 0.1),
-            RobotConstants.LOOPER_DT
+            LOOPER_DT
         ),
         RobotConstants.AUTO_ROBOT_CONFIG,
         () -> false, // do not flip in command, flip done by user before passing
@@ -242,27 +253,18 @@ public class AutoActions {
 
   public static Command prepare() {
     return Commands
-        .runOnce(() -> DestinationSupplier.getInstance()
-            .setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING))
+        .runOnce(() -> DestinationSupplier.getInstance().setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING))
         .andThen(
             Commands.parallel(
                 Commands.waitUntil(AutoActions::isSafeToRaise)
-                    .onlyIf(() -> (DestinationSupplier
-                        .getInstance().getPreState() == SuperstructureState.L4))
-                    .andThen(superstructure
-                        .runGoal(() -> DestinationSupplier
-                            .getInstance()
-                            .getPreState())
+                    .onlyIf(() -> (DestinationSupplier.getInstance().getPreState() == SuperstructureState.L4))
+                    .andThen(superstructure.runGoal(() -> DestinationSupplier.getInstance().getPreState())
                         .until(superstructure::atGoal))));
-
   }
 
   public static Command shoot() {
     return superstructure
-        .runGoal(
-            () -> DestinationSupplier
-                .getInstance()
-                .getShootState())
+        .runGoal(() -> DestinationSupplier.getInstance().getShootState())
         .until(() -> !superstructure.hasCoral());
   }
 
@@ -395,7 +397,7 @@ public class AutoActions {
   }
 
   public static boolean isNearIntakeEnd(boolean isLeft) {
-    var poseWorldRobot =  RobotStateRecorder.getPoseWorldRobotCurrent();
+    var poseWorldRobot = RobotStateRecorder.getPoseWorldRobotCurrent();
     var intakeEndPoint = AllianceFlipUtil.apply(isLeft ? kLeftIntakePoint : kRightIntakePoint);
     return poseWorldRobot.toPose2d().getTranslation().minus(intakeEndPoint.getTranslation()).getNorm() < 0.50;
   }
@@ -437,9 +439,25 @@ public class AutoActions {
 
   public static boolean isInIntakeDangerZone() {
     // get robot position in field-flipped coordinates
-    var p = AllianceFlipUtil
-        .apply(RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d())
-        .getTranslation();
+    var poseCurr = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
+    var vel = RobotStateRecorder.getVelocityWorldRobotCurrent().getTranslation();
+    var poseStop = new Pose2d(
+        poseCurr.getTranslation().plus(
+            vel.times(LOOPER_DT * AutoParamsNT.StopLookforward.getValue())
+        ),
+        poseCurr.getRotation()
+    );
+    Logger.recordOutput("Temp/StopPose", poseStop);
+    var pose = AllianceFlipUtil.apply(poseStop);
+    var p = pose.getTranslation().plus(
+        new Translation2d(AutoParamsNT.IntakeOffsetDistanceMeters.getValue(), pose.getRotation()));
+
+    Logger.recordOutput("Temp/IntakePosition", new Pose2d(p, Rotation2d.kZero));
+    Logger.recordOutput("Temp/LeftIntakeDangerZone", new Translation2d[]{
+        new Translation2d(AutoParamsNT.LeftTriangleX.getValue(), FieldConstants.fieldWidth),
+        new Translation2d(0.0, AutoParamsNT.LeftTriangleY.getValue()),
+        new Translation2d(0.0, FieldConstants.fieldWidth),
+    });
 
     // define the two line endpoints and direction vectors
     var rRight = new Translation2d(0.0, AutoParamsNT.RightTriangleY.getValue());
@@ -499,11 +517,13 @@ public class AutoActions {
 
     static final double CoralInSightDegs = 80.0;
 
-    static final double RightTriangleX = 2.5;
-    static final double RightTriangleY = 1.7;
-    static final double LeftTriangleX = 2.5;
-    static final double LeftTriangleY = 6.3;
-    static final double BoundaryOffset = 0.6;
+    static final double IntakeOffsetDistanceMeters = 0.85;
+    static final double RightTriangleX = 2.1;
+    static final double RightTriangleY = 1.4;
+    static final double LeftTriangleX = 2.1;
+    static final double LeftTriangleY = 6.6;
+    static final double BoundaryOffset = 0.0;
+    static final double StopLookforward = 10.0;
   }
 
 }

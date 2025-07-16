@@ -1,22 +1,17 @@
-package frc.robot.auto.routines;
+package frc.robot.auto;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.FieldConstants;
 import frc.robot.RobotStateRecorder;
-import frc.robot.auto.AutoActions;
-import frc.robot.auto.AutoRoutine;
 import frc.robot.commands.aimSequences.AimGoalSupplier;
 import frc.robot.subsystems.indicator.IndicatorIO;
 import frc.robot.subsystems.superstructure.SuperstructureState;
-import frc.robot.utils.CoralRecorder;
 import lib.ironpulse.command.DecisionTree;
 import lib.ironpulse.utils.Logging;
-import org.littletonrobotics.AllianceFlipUtil;
 
 import java.util.Set;
 
@@ -28,7 +23,7 @@ public class AutoLeft2C extends AutoRoutine {
       new Translation2d(7.140, FieldConstants.fieldWidth - 0.50),
       Rotation2d.kZero
   );
-  private final Timer indexTimer = new Timer();
+
   private int idxCoral = 0;
   private boolean hasSeenCoral = false;
 
@@ -40,11 +35,6 @@ public class AutoLeft2C extends AutoRoutine {
     idxCoral = 0;
     hasSeenCoral = false;
     RobotStateRecorder.setCoralFilterRegion(null);
-//    RobotStateRecorder.setCoralFilterRegion(
-//        AllianceFlipUtil.shouldFlip()
-//            ? CoralRecorder.kRedLeftAutoCoralRegion
-//            : CoralRecorder.kBlueLeftAutoCoralRegion
-//    );
   }
 
   private void advanceCoralIdx() {
@@ -54,8 +44,6 @@ public class AutoLeft2C extends AutoRoutine {
 
   private Command setGoalBasedOnIdx() {
     Logging.info("Auto", "Currently on coral idx %d.", idxCoral);
-    indexTimer.reset();
-    indexTimer.start();
 
     return switch (idxCoral) {
       case 0 -> setGoal(AimGoalSupplier.ReefFace.FarLeftTilt, false, SuperstructureState.L4);
@@ -102,6 +90,8 @@ public class AutoLeft2C extends AutoRoutine {
                   intake()
               );
             }, Set.of(swerve, superstructure)
+        ).andThen(
+            runOnce(swerve::runStop)
         )
     );
 
@@ -111,8 +101,7 @@ public class AutoLeft2C extends AutoRoutine {
             driveToBackoffPoint(true),
             intake()
         )
-    )
-        .unless(() -> hasSeenCoral || AutoActions.hasCoralAtEE());
+    ).unless(() -> hasSeenCoral || AutoActions.hasCoralAtEE());
 
     var score = sequence(
         print("Scoring"),
@@ -155,6 +144,7 @@ public class AutoLeft2C extends AutoRoutine {
     tree.addDecision(getCoral, driveToBackoffPoint, () -> !hasCoralAtEE() && !hasSeenCoral);
     tree.addDecision(driveToBackoffPoint, getCoral, () -> !hasCoralAtEE() && !hasSeenCoral);
     tree.addDecision(driveToBackoffPoint, score, () -> hasSeenCoral || hasCoralAtEE());
+
 
     // go back to get coral if not reached target count
     tree.addDecision(score, getCoral, () -> this.idxCoral < 4);

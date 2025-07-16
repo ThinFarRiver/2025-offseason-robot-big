@@ -13,15 +13,20 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.ReloadableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.auto.AutoActions;
+import frc.robot.auto.AutoLeft2C;
 import frc.robot.auto.AutoSelector;
-import frc.robot.auto.routines.*;
 import frc.robot.commands.CoralIntakeAssistCommand;
-import frc.robot.commands.aimSequences.*;
+import frc.robot.commands.aimSequences.AimGoalSupplier;
+import frc.robot.commands.aimSequences.NetAimCommand;
+import frc.robot.commands.aimSequences.ReefAimCommand;
+import frc.robot.commands.aimSequences.SuperCycleCommand;
 import frc.robot.subsystems.beambreak.BeambreakIOReal;
 import frc.robot.subsystems.beambreak.BeambreakIOSim;
 import frc.robot.subsystems.climber.ClimberIOReal;
@@ -53,13 +58,14 @@ import frc.robot.subsystems.superstructure.intake.IntakePivotIOSim;
 import frc.robot.subsystems.superstructure.intake.IntakeSubsystem;
 import frc.robot.utils.BlocklessEitherCommand;
 import lib.ironpulse.rbd.TransformRecorder;
-import lib.ironpulse.utils.TimeDelayedBoolean;
 import lib.ironpulse.swerve.Swerve;
 import lib.ironpulse.swerve.SwerveCommands;
 import lib.ironpulse.swerve.sim.ImuIOSim;
 import lib.ironpulse.swerve.sim.SwerveModuleIOSimpleSim;
 import lib.ironpulse.swerve.sjtu6.ImuIOPigeon;
 import lib.ironpulse.swerve.sjtu6.SwerveModuleIOSJTU6;
+import lib.ironpulse.utils.TimeDelayedBoolean;
+import lib.ntext.NTParameterRegistry;
 import lombok.Getter;
 
 import java.util.HashMap;
@@ -198,21 +204,11 @@ public class RobotContainer {
 
     // init auto actions
     AutoActions.init(swerve, superstructure, indicatorSubsystem, photonVisionSubsystem);
-
-    AutoSelector.getInstance().registerAuto("TestAuto", new AutoTest());
-    AutoSelector.getInstance().registerAuto("TestComplexAuto", new AutoComplexTest());
-    AutoSelector.getInstance().registerAuto("Right 5C1A", new AutoRight5C1A());
-    AutoSelector.getInstance().registerAuto("Left 5C1A", new AutoLeft5C1A());
-    AutoSelector.getInstance().registerAuto("Left 1C", new AutoLeft1C());
     AutoSelector.getInstance().registerAuto("Left 2C", new AutoLeft2C());
-
-
-    //CommandScheduler.getInstance().unregisterSubsystem(climberSubsystem);
 
     configureDriverBindings();
     configureStreamDeckBindings();
     configureTesterBindings();
-
   }
 
   private void configureDriverBindings() {
@@ -226,32 +222,35 @@ public class RobotContainer {
             MetersPerSecond.of(0.04),
             DegreesPerSecond.of(3.0)));
 
-    driverController.start().onTrue(SwerveCommands.resetAngle(swerve, new Rotation2d())
-        .alongWith(Commands.runOnce(
-            () -> {
-              RobotStateRecorder.getInstance().resetTransform(
-                  TransformRecorder.kFrameWorld,
-                  TransformRecorder.kFrameRobot);
-              lastResetTime = Timer.getFPGATimestamp();
-              indicatorSubsystem.setPattern(IndicatorIO.Patterns.RESET_ODOM);
-            })));
+    driverController.start().onTrue(
+        SwerveCommands.resetAngle(swerve, new Rotation2d())
+            .alongWith(
+                Commands.runOnce(() -> {
+                  RobotStateRecorder.getInstance().resetTransform(
+                      TransformRecorder.kFrameWorld,
+                      TransformRecorder.kFrameRobot);
+                  lastResetTime = Timer.getFPGATimestamp();
+                  indicatorSubsystem.setPattern(IndicatorIO.Patterns.RESET_ODOM);
+                }))
+            .ignoringDisable(true)
+    );
 
     // INTAKE and OUTTAKE
     driverController
         .rightStick()
         .toggleOnTrue(
-                    Commands.parallel(
-                        new CoralIntakeAssistCommand(
-                            swerve,
-                            () -> -driverController.getLeftY(),
-                            () -> -driverController.getLeftX(),
-                            () -> -driverController.getRightX(),
-                            RobotStateRecorder::getPoseDriverRobotCurrent,
-                            MetersPerSecond.of(0.04),
-                            DegreesPerSecond.of(3.0)
-                        ),
-                        superstructure.runGoal(this::determineIntakeState)
-                    ).until(this::isIntakeComplete)
+            Commands.parallel(
+                new CoralIntakeAssistCommand(
+                    swerve,
+                    () -> -driverController.getLeftY(),
+                    () -> -driverController.getLeftX(),
+                    () -> -driverController.getRightX(),
+                    RobotStateRecorder::getPoseDriverRobotCurrent,
+                    MetersPerSecond.of(0.04),
+                    DegreesPerSecond.of(3.0)
+                ),
+                superstructure.runGoal(this::determineIntakeState)
+            ).until(this::isIntakeComplete)
         );
 
     driverController.b().whileTrue(superstructure.runGoal(() -> SuperstructureState.CORAL_OUTTAKE));
@@ -259,42 +258,42 @@ public class RobotContainer {
     driverController.a().onTrue(superstructure.toggleIntakePose());
 
     //CLIMBER
-   driverController.povDown().whileTrue(
-     Commands.either(
-     Commands.run(() ->
-     climberSubsystem.setWantedState(ClimberSubsystem.WantedState.IDLE)),
-     Commands.run(() ->
-     climberSubsystem.setWantedState(ClimberSubsystem.WantedState.DEPLOY)),
-     climberSubsystem::hasDeployed
-   ));
+    driverController.povDown().whileTrue(
+        Commands.either(
+            Commands.run(() ->
+                climberSubsystem.setWantedState(ClimberSubsystem.WantedState.IDLE)),
+            Commands.run(() ->
+                climberSubsystem.setWantedState(ClimberSubsystem.WantedState.DEPLOY)),
+            climberSubsystem::hasDeployed
+        ));
 
     //SCORING
     driverController
         .leftBumper()
         .whileTrue(
             new BlocklessEitherCommand(
-              // algae
-              Commands.parallel(
-                Commands.deadline(
-                    new NetAimCommand(swerve, indicatorSubsystem, () -> driverController.getLeftX() * 4.5),
-                    AutoActions.applySwerveLimit()
-                ),
-                Commands.waitUntil(() -> {
-                  Pose2d poseWorldRobot = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
-                  return AimGoalSupplier.isNearNet(poseWorldRobot);
-                }).andThen(
-                    superstructure.runGoal(() -> SuperstructureState.NET_SCORE).until(superstructure::poseAtGoal)
-                ).andThen(
-                  Commands.waitUntil(() -> {
-                    return RobotStateRecorder.getVelocityWorldRobotCurrent().getTranslation().getNorm() < 0.20;
-                  })
-                )
-              )
-              .andThen(
-                Commands.runOnce(() -> netEjectTimer.reset())
-                    .andThen(superstructure
-                        .runGoal(() -> SuperstructureState.NET_SCORE_EJECT)
-                        .until(() -> netEjectTimer.update(!superstructure.hasAlgae())))),
+                // algae
+                Commands.parallel(
+                        Commands.deadline(
+                            new NetAimCommand(swerve, indicatorSubsystem, () -> driverController.getLeftX() * 4.5),
+                            AutoActions.applySwerveLimit()
+                        ),
+                        Commands.waitUntil(() -> {
+                          Pose2d poseWorldRobot = RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d();
+                          return AimGoalSupplier.isNearNet(poseWorldRobot);
+                        }).andThen(
+                            superstructure.runGoal(() -> SuperstructureState.NET_SCORE).until(superstructure::poseAtGoal)
+                        ).andThen(
+                            Commands.waitUntil(() -> {
+                              return RobotStateRecorder.getVelocityWorldRobotCurrent().getTranslation().getNorm() < 0.20;
+                            })
+                        )
+                    )
+                    .andThen(
+                        Commands.runOnce(() -> netEjectTimer.reset())
+                            .andThen(superstructure
+                                .runGoal(() -> SuperstructureState.NET_SCORE_EJECT)
+                                .until(() -> netEjectTimer.update(!superstructure.hasAlgae())))),
                 // coral
                 createScoringCommand(false, SuperstructureState.L4),
                 superstructure::hasAlgae));
@@ -302,23 +301,23 @@ public class RobotContainer {
         .leftTrigger()
         .whileTrue(
             new BlocklessEitherCommand(
-              // processor
-              Commands.deadline(
-                Commands.waitUntil(()->driverController.rightTrigger().getAsBoolean()),
-                superstructure.runGoal(() -> SuperstructureState.PROCESSOR_SCORE))
-                  .andThen(
-                    Commands.runOnce(() -> processorEjectTimer.reset())
-                    .andThen(superstructure.runGoal(() -> SuperstructureState.PROCESSOR_SCORE_EJECT)
-                    .until(() -> processorEjectTimer.update(!superstructure.hasAlgae())))
-                  ),
-              new BlocklessEitherCommand(
-                  createScoringCommand(false, SuperstructureState.L3),
-                  superstructure.runGoal(
-                      () -> driverController.rightTrigger().getAsBoolean() ? SuperstructureState.L1_INTAKE_SIDE_EJECT : SuperstructureState.L1_INTAKE_SIDE
-                  ),
-                  superstructure::hasCoral
-              ),
-              superstructure::hasAlgae
+                // processor
+                Commands.deadline(
+                        Commands.waitUntil(() -> driverController.rightTrigger().getAsBoolean()),
+                        superstructure.runGoal(() -> SuperstructureState.PROCESSOR_SCORE))
+                    .andThen(
+                        Commands.runOnce(() -> processorEjectTimer.reset())
+                            .andThen(superstructure.runGoal(() -> SuperstructureState.PROCESSOR_SCORE_EJECT)
+                                .until(() -> processorEjectTimer.update(!superstructure.hasAlgae())))
+                    ),
+                new BlocklessEitherCommand(
+                    createScoringCommand(false, SuperstructureState.L3),
+                    superstructure.runGoal(
+                        () -> driverController.rightTrigger().getAsBoolean() ? SuperstructureState.L1_INTAKE_SIDE_EJECT : SuperstructureState.L1_INTAKE_SIDE
+                    ),
+                    superstructure::hasCoral
+                ),
+                superstructure::hasAlgae
             ));
     driverController
         .back()
@@ -340,11 +339,11 @@ public class RobotContainer {
             createScoringCommand(true, SuperstructureState.L2));
 
     driverController.povUp().whileTrue(
-      superstructure.runGoal(SuperstructureState.CORAL_L1_INTAKE)
+        superstructure.runGoal(SuperstructureState.CORAL_L1_INTAKE)
     );
 
 
-  //TESTING : TODO: remove
+    //TESTING : TODO: remove
     //     driverController.x().whileTrue(
 //     Commands.runOnce(() -> {
 //     destinationSupplier.setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING);
@@ -353,23 +352,23 @@ public class RobotContainer {
 //     new ReefAimCommand(swerve, indicatorSubsystem)
 //     )
 //     );
-//    driverController.x().whileTrue(
-//        Commands.deadline(
-//            AutoActions.chase(),
-//            Commands.run(
-//                () -> {
-//                  if(AutoActions.isCoralInSight()) {
-//                    indicatorSubsystem.setPattern(IndicatorIO.Patterns.ASSISTED_INTAKE);
-//                  } else {
-//                    indicatorSubsystem.setPattern(IndicatorIO.Patterns.INTAKE);
-//                  }
-//                },indicatorSubsystem)
-//        ).andThen(
-//            Commands.run(
-//                () -> indicatorSubsystem.setPattern(IndicatorIO.Patterns.AFTER_INTAKE)
-//            )
-//        )
-//    );
+    driverController.x().whileTrue(
+        Commands.deadline(
+            AutoActions.chase(),
+            Commands.run(
+                () -> {
+                  if(AutoActions.isCoralInSight()) {
+                    indicatorSubsystem.setPattern(IndicatorIO.Patterns.ASSISTED_INTAKE);
+                  } else {
+                    indicatorSubsystem.setPattern(IndicatorIO.Patterns.INTAKE);
+                  }
+                },indicatorSubsystem)
+        ).andThen(
+            Commands.run(
+                () -> indicatorSubsystem.setPattern(IndicatorIO.Patterns.AFTER_INTAKE)
+            )
+        )
+    );
   }
 
   private void configureStreamDeckBindings() {
@@ -464,19 +463,19 @@ public class RobotContainer {
         new BlocklessEitherCommand(
             // If intake button is pressed, run reef aim command then supercycle when coral is intaken
             Commands.runOnce(() -> {
-              destinationSupplier.updateBranch(isRightBranch);
-              destinationSupplier.setStateSetPoint(state);
-              destinationSupplier.setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING);
-            }).andThen(
-              Commands.parallel(
-                superstructure.runGoal(() -> SuperstructureState.CORAL_GROUND_INTAKE),
-                new ReefAimCommand(swerve, indicatorSubsystem)
-              ).until(superstructure::hasCoral)
-            )
-            .andThen(new SuperCycleCommand(swerve, superstructure, indicatorSubsystem, true)),
+                  destinationSupplier.updateBranch(isRightBranch);
+                  destinationSupplier.setStateSetPoint(state);
+                  destinationSupplier.setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING);
+                }).andThen(
+                    Commands.parallel(
+                        superstructure.runGoal(() -> SuperstructureState.CORAL_GROUND_INTAKE),
+                        new ReefAimCommand(swerve, indicatorSubsystem)
+                    ).until(superstructure::hasCoral)
+                )
+                .andThen(new SuperCycleCommand(swerve, superstructure, indicatorSubsystem, true)),
             // If intake button is not pressed, do nothing
             Commands.none(),
-            ()-> superstructure.getState() == SuperstructureState.CORAL_GROUND_INTAKE
+            () -> superstructure.getState() == SuperstructureState.CORAL_GROUND_INTAKE
         ),
         () -> superstructure.hasCoral()
     );
@@ -554,12 +553,12 @@ public class RobotContainer {
     limelightSubsystem.estimatedPose.ifPresent(estimate -> {
       if (estimate[0] != null) {
         swerve.addVisionMeasurement(
-            new Pose3d(estimate[0].pose()), estimate[0].timestampSeconds(), VecBuilder.fill(0.1, 0.1, 0.3, 9999.0));
+            new Pose3d(estimate[0].pose()), estimate[0].timestampSeconds(), VecBuilder.fill(0.1, 0.1, 0.3, 100.0));
       }
 
       if (estimate[1] != null) {
         swerve.addVisionMeasurement(
-            new Pose3d(estimate[1].pose()), estimate[1].timestampSeconds(), VecBuilder.fill(0.1, 0.1, 0.3, 9999.0));
+            new Pose3d(estimate[1].pose()), estimate[1].timestampSeconds(), VecBuilder.fill(0.1, 0.1, 0.3, 100.0));
       }
     });
 

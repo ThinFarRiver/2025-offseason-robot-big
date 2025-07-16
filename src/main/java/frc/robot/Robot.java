@@ -54,6 +54,8 @@ public class Robot extends LoggedRobot {
 
     // early-stage initialization
     DriverStation.silenceJoystickConnectionWarning(true);
+
+    // config watchdog
     try {
       Field watchdogField = IterativeRobotBase.class.getDeclaredField("m_watchdog");
       watchdogField.setAccessible(true);
@@ -82,8 +84,8 @@ public class Robot extends LoggedRobot {
 
     LoggedTracer.record("Commands");
     LoggedTracer.record("RobotPeriodic");
-    if (RobotConstants.TUNING)
-      NTParameterRegistry.refresh();
+
+    NTParameterRegistry.refresh();
     robotContainer.robotPeriodic();
   }
 

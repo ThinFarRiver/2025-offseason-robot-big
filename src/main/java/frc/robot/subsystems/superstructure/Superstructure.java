@@ -187,10 +187,10 @@ public class Superstructure extends SubsystemBase {
 
         //simulated gamepiece tracking
         if (Robot.isSimulation()) {
-            if (simIntakeTimer.update(atGoal() && state == SuperstructureState.CORAL_GROUND_INTAKE)) {
-                intake.setIndexRollerHasCoral(false);
-                endEffectorArm.setHasCoral(true);
-            }
+//            if (simIntakeTimer.update(atGoal() && state == SuperstructureState.CORAL_GROUND_INTAKE)) {
+//                intake.setIndexRollerHasCoral(false);
+//                endEffectorArm.setHasCoral(true);
+//            }
             if (state != SuperstructureState.CORAL_GROUND_INTAKE) {
                 simIntakeTimer.reset();
             }

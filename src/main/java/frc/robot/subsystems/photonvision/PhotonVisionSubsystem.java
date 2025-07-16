@@ -31,11 +31,11 @@ public class PhotonVisionSubsystem extends SubsystemBase {
         // Camera physical configuration
         public static final double CAMERA_HEIGHT_METERS = 1.0;
         public static final double CAMERA_PITCH_DEGREES = -30.0;
-        public static final double CAMERA_YAW_DEGREES = 10.0;
+        public static final double CAMERA_YAW_DEGREES = 0.0;
 
         // Camera to robot transform (camera position relative to robot center)
-        public static final double CAMERA_TO_ROBOT_X = 0.0;  // 0.14m front
-        public static final double CAMERA_TO_ROBOT_Y = -0.07;   // 0.00m left
+        public static final double CAMERA_TO_ROBOT_X = 0.0;
+        public static final double CAMERA_TO_ROBOT_Y = 0.08;
         
         // Distance estimation parameters
         public static final double DISTANCE_SCALE_FACTOR = 1.0;

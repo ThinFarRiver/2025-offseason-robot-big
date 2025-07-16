@@ -60,7 +60,7 @@ public class ChaseCoralCommand extends Command {
     // pick a new target if we don’t have one
     if (targetCoralId == null) {
       RobotStateRecorder
-          .getNearestCoralInSight()
+          .getMostInDirectionCoral()
           .ifPresent(info -> targetCoralId = info.id);
     }
 
@@ -136,10 +136,10 @@ public class ChaseCoralCommand extends Command {
     static final double driveKp = 3.0;
     static final double driveKi = 0.0;
     static final double driveKd = 0.1;
-    static final double turnKp = 6.5;
+    static final double turnKp = 6.0;
     static final double turnKi = 0.0;
-    static final double turnKd = 0.3;
-    static final double activeChaseMaxVelocityMps = 2.7;
+    static final double turnKd = 0.15;
+    static final double activeChaseMaxVelocityMps = 3.5;
     static final double blindChaseMaxTimeSeconds = 0.0;
     static final double blindChaseMaxVelocityMps = 1.5;
   }
