@@ -257,18 +257,18 @@ public class RobotContainer {
     driverController.a().onTrue(superstructure.toggleIntakePose());
 
     //CLIMBER
-    driverController.povDown().toggleOnTrue(
-        Commands.parallel(
-            superstructure.runGoal(() -> SuperstructureState.IDLE),
-            Commands.either(
-                Commands.runOnce(() -> climberSubsystem.setWantedState(ClimberSubsystem.WantedState.IDLE)),
-                Commands.runOnce(() -> climberSubsystem.setWantedState(ClimberSubsystem.WantedState.DEPLOY)),
-                climberSubsystem::hasDeployed
-            ))
-    );
+    driverController.povDown().whileTrue(
+        Commands.either(
+            Commands.run(() ->
+                climberSubsystem.setWantedState(ClimberSubsystem.WantedState.IDLE)),
+            Commands.run(() ->
+                climberSubsystem.setWantedState(ClimberSubsystem.WantedState.DEPLOY)),
+            climberSubsystem::hasDeployed
+        ));
     driverController.povRight().onTrue(
         Commands.runOnce(climberSubsystem::forceClimb)
     );
+
 
     //SCORING
     driverController
