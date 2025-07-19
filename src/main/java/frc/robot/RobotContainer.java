@@ -13,9 +13,9 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -198,6 +198,7 @@ public class RobotContainer {
     }
     superstructure = new Superstructure(intakeSubsystem, endEffectorArmSubsystem, elevatorSubsystem);
 
+//    CommandScheduler.getInstance().unregisterSubsystem(swerve);
     AutoActions.init(swerve, superstructure, indicatorSubsystem, photonVisionSubsystem);
 
     configureDriverBindings();
@@ -221,14 +222,14 @@ public class RobotContainer {
         swerve.defer(() -> {
           return
               SwerveCommands.resetAngle(swerve, AllianceFlipUtil.apply(Rotation2d.k180deg))
-              .alongWith(
-                  Commands.runOnce(() -> {
-                    RobotStateRecorder.getInstance().resetTransform(
-                        TransformRecorder.kFrameWorld,
-                        TransformRecorder.kFrameRobot);
-                    indicatorSubsystem.indicateWithTimeout(IndicatorIO.Patterns.RESET_ODOM, 0.5).schedule();
-                  }))
-              .ignoringDisable(true);
+                  .alongWith(
+                      Commands.runOnce(() -> {
+                        RobotStateRecorder.getInstance().resetTransform(
+                            TransformRecorder.kFrameWorld,
+                            TransformRecorder.kFrameRobot);
+                        indicatorSubsystem.indicateWithTimeout(IndicatorIO.Patterns.RESET_ODOM, 0.5).schedule();
+                      }))
+                  .ignoringDisable(true);
         }).ignoringDisable(true)
     );
 
@@ -267,6 +268,9 @@ public class RobotContainer {
                 climberSubsystem.setWantedState(ClimberSubsystem.WantedState.DEPLOY)),
             climberSubsystem::hasDeployed
         ));
+    driverController.povRight().onTrue(
+        Commands.runOnce(climberSubsystem::forceClimb)
+    );
 
     //SCORING
     driverController
@@ -344,14 +348,14 @@ public class RobotContainer {
 
 
     //TESTING : TODO: remove
-    //     driverController.x().whileTrue(
-//     Commands.runOnce(() -> {
-//     destinationSupplier.setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING);
-//     })
-//     .andThen(
-//     new ReefAimCommand(swerve, indicatorSubsystem)
-//     )
-//     );
+    driverController.x().whileTrue(
+        Commands.runOnce(() -> {
+              destinationSupplier.setCurrentGamePiece(DestinationSupplier.GamePiece.CORAL_SCORING);
+            })
+            .andThen(
+                new ReefAimCommand(swerve, indicatorSubsystem)
+            )
+    );
 //    driverController.x().whileTrue(
 //        Commands.deadline(
 //            AutoActions.chase().until(AutoActions::isInIntakeDangerZone),
@@ -369,9 +373,9 @@ public class RobotContainer {
 //            }
 //        )
 //    );
-    driverController.x().onTrue(
-        superstructure.runZero()
-    );
+//    driverController.x().onTrue(
+//        superstructure.runZero()
+//    );
   }
 
   private void configureStreamDeckBindings() {
@@ -432,7 +436,7 @@ public class RobotContainer {
     indicatorSubsystem.setDefaultCommand(
         Commands.runOnce(() -> {
           if (!DriverStation.isEnabled()) {
-            if(DriverStation.isDSAttached()) {
+            if (DriverStation.isDSAttached()) {
               indicatorSubsystem.setPattern(
                   AllianceFlipUtil.shouldFlip() ? IndicatorIO.Patterns.RED_ALLIANCE : IndicatorIO.Patterns.BLUE_ALLIANCE
               );
@@ -455,7 +459,7 @@ public class RobotContainer {
                 indicatorSubsystem.setPattern(IndicatorIO.Patterns.INTAKE);
               } else {
                 // third priority: in edge case
-                if(AimGoalSupplier.isEdgeCase(RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d()))
+                if (AimGoalSupplier.isEdgeCase(RobotStateRecorder.getPoseWorldRobotCurrent().toPose2d()))
                   indicatorSubsystem.setPattern(IndicatorIO.Patterns.EDGE_CASE);
                 else
                   indicatorSubsystem.setPattern(IndicatorIO.Patterns.NORMAL);

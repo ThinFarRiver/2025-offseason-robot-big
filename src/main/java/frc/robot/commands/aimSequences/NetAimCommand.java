@@ -7,6 +7,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.RobotConstants;
 import frc.robot.RobotStateRecorder;
@@ -146,6 +147,12 @@ public class NetAimCommand extends Command {
     Logger.recordOutput(kTag + "/xStationary", xStationary);
     Logger.recordOutput(kTag + "/imuPitchStable", imuPitchStable);
     Logger.recordOutput(kTag + "/imuRollStable", imuRollStable);
+
+    SmartDashboard.putBoolean(kTag + "/xOnTarget", xOnTarget);
+    SmartDashboard.putBoolean(kTag + "/xStationary", xStationary);
+    SmartDashboard.putBoolean(kTag + "/imuPitchStable", imuPitchStable);
+    SmartDashboard.putBoolean(kTag + "/imuRollStable", imuRollStable);
+
 
     return xOnTarget && xStationary && imuStable.update(imuPitchStable && imuRollStable, NetAimCommandParamsNT.imuStationaryTime.getValue());
   }

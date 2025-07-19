@@ -9,15 +9,14 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.auto.AutoActions;
 import frc.robot.utils.CoralRecorder;
 import lib.ironpulse.math.obstacle.Obstacle2d;
 import lib.ironpulse.rbd.TransformRecorder;
-import lombok.Getter;
-import lombok.Setter;
 import org.littletonrobotics.junction.Logger;
 
-import javax.swing.text.html.Option;
 import java.util.Optional;
 
 import static edu.wpi.first.units.Units.Degrees;
@@ -28,11 +27,15 @@ public class RobotStateRecorder extends TransformRecorder {
   private static RobotStateRecorder instance;
   private static TimeInterpolatableBuffer<Pose2d> velocityRobotBuffer;
   private static CoralRecorder recorder;
+  private static Field2d field;
 
   private RobotStateRecorder() {
     setBufferDuration(2.0);
     velocityRobotBuffer = TimeInterpolatableBuffer.createBuffer(2.0);
     recorder = new CoralRecorder();
+
+    // add filed
+    field = new Field2d();
 
     // add default transforms
     putTransform(kTransformWorldDriverStationBlue, kFrameWorld, kFrameDriverStationBlue); // static: TWorldDSB
@@ -53,17 +56,32 @@ public class RobotStateRecorder extends TransformRecorder {
     Optional<CoralRecorder.CoralInfo> mostAlignedCoral = recorder.getMostInDirectionCoral(getPoseWorldRobotCurrent().toPose2d());
     Optional<CoralRecorder.CoralInfo> nearestCoral = recorder.getNearestCoral(getPoseWorldRobotCurrent().toPose2d());
 
-    if (mostAlignedCoral.isPresent() && nearestCoral.isPresent()){
-    Logger.recordOutput("RobotStateRecorder/mostAlignedCoral", new Pose2d(mostAlignedCoral.get().getTranslation(), new Rotation2d(0)));
-    Logger.recordOutput("RobotStateRecorder/nearestCoral", new Pose2d(nearestCoral.get().getTranslation(), new Rotation2d(0)));
+    if (mostAlignedCoral.isPresent() && nearestCoral.isPresent()) {
+      Logger.recordOutput("RobotStateRecorder/mostAlignedCoral", new Pose2d(mostAlignedCoral.get().getTranslation(), new Rotation2d(0)));
+      Logger.recordOutput("RobotStateRecorder/nearestCoral", new Pose2d(nearestCoral.get().getTranslation(), new Rotation2d(0)));
     }
 
+    // visualization
+    var poseWorldRobot = getPoseWorldRobotCurrent();
+    var posCorals = recorder.getCoralLocations();
+    var velRobot = getVelocityRobotCurrent();
+    var velWorldRobot = getVelocityWorldRobotCurrent();
+
+    field.getRobotObject().setPose(poseWorldRobot.toPose2d());
+    for(int i = 0; i < posCorals.length; ++i)
+      field.getObject("Corals").setPoses(posCorals);
+    SmartDashboard.putData("Field", field);
+
+
     // logging
-    Logger.recordOutput("RobotStateRecorder/poseWorldRobot", RobotStateRecorder.getPoseWorldRobotCurrent());
-    Logger.recordOutput("RobotStateRecorder/velocityRobot", RobotStateRecorder.getVelocityRobotCurrent());
-    Logger.recordOutput("RobotStateRecorder/velocityWorldRobot", RobotStateRecorder.getVelocityWorldRobotCurrent());
-    Logger.recordOutput("RobotStateRecorder/corals", recorder.getCoralLocations());
-    Logger.recordOutput("RobotStateRecorder/isInIntakeDangerZone", AutoActions.isInIntakeDangerZone());
+    Logger.recordOutput("RobotStateRecorder/poseWorldRobot", poseWorldRobot);
+    Logger.recordOutput("RobotStateRecorder/velocityRobot", velRobot);
+    Logger.recordOutput("RobotStateRecorder/velocityWorldRobot", velWorldRobot);
+    Logger.recordOutput("RobotStateRecorder/corals", posCorals);
+
+    boolean isInIntakeDangerZone = AutoActions.isInIntakeDangerZone();
+    Logger.recordOutput("RobotStateRecorder/isInIntakeDangerZone", isInIntakeDangerZone);
+    SmartDashboard.putBoolean("RobotStateRecorder/IsInIntakeDangerZone", isInIntakeDangerZone);
   }
 
   public static void putVelocityRobot(Time time, ChassisSpeeds speed) {

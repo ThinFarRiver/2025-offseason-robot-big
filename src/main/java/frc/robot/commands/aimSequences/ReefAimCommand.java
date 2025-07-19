@@ -7,6 +7,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Robot;
 import frc.robot.RobotConstants;
@@ -245,6 +246,16 @@ public class ReefAimCommand extends Command {
     Logger.recordOutput(kTag + "/rotationStationary", rotationStationary);
     Logger.recordOutput(kTag + "/imuPitchStable", imuPitchStable);
     Logger.recordOutput(kTag + "/imuRollStable", imuRollStable);
+
+    SmartDashboard.putBoolean(kTag + "/xOnTarget", xOnTarget);
+    SmartDashboard.putBoolean(kTag + "/xStationary", xStationary);
+    SmartDashboard.putBoolean(kTag + "/yOnTarget", yOnTarget);
+    SmartDashboard.putBoolean(kTag + "/yStationary", yStationary);
+    SmartDashboard.putBoolean(kTag + "/rotationOnTarget", rotationOnTarget);
+    SmartDashboard.putBoolean(kTag + "/rotationStationary", rotationStationary);
+    SmartDashboard.putBoolean(kTag + "/imuPitchStable", imuPitchStable);
+    SmartDashboard.putBoolean(kTag + "/imuRollStable", imuRollStable);
+
     return (
         xOnTarget && xStationary && yOnTarget && yStationary && rotationOnTarget && rotationStationary
         && imuPitchStable && imuRollStable

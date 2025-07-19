@@ -1,9 +1,11 @@
 package frc.robot.subsystems.superstructure.endeffectorarm;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.EndEffectorArmParamsNT;
+import frc.robot.Robot;
 import frc.robot.RobotConstants;
 import frc.robot.RobotConstants.EndEffectorArmConstants;
 import frc.robot.subsystems.beambreak.BeambreakIO;
@@ -84,16 +86,16 @@ public class EndEffectorArmSubsystem {
         rollerIO.updateInputs(armRollerIOInputs);
 
         // Check if angle exceeds maximum limit
-        if (wantedAngle > EndEffectorArmParamsNT.maxAngleDegrees.getValue()) {
-            stopDueToLimit = true;
-            System.out.println("EndEffectorArm setpoint " + wantedAngle + " exceeds maximum angle of " + 
-                EndEffectorArmParamsNT.maxAngleDegrees.getValue() + " degrees");
-            throw new IllegalArgumentException("EndEffectorArm setpoint " + wantedAngle + " exceeds maximum angle of " + 
-                EndEffectorArmParamsNT.maxAngleDegrees.getValue() + " degrees");
-        } else if (stopDueToLimit) {
-            // Reset stopDueToLimit if angle is now valid
-            stopDueToLimit = false;
-        }
+//        if (wantedAngle > EndEffectorArmParamsNT.maxAngleDegrees.getValue() && DriverStation.isEnabled()) {
+//            stopDueToLimit = true;
+//            System.out.println("EndEffectorArm setpoint " + wantedAngle + " exceeds maximum angle of " +
+//                EndEffectorArmParamsNT.maxAngleDegrees.getValue() + " degrees");
+//            throw new IllegalArgumentException("EndEffectorArm setpoint " + wantedAngle + " exceeds maximum angle of " +
+//                EndEffectorArmParamsNT.maxAngleDegrees.getValue() + " degrees");
+//        } else if (stopDueToLimit) {
+//            // Reset stopDueToLimit if angle is now valid
+//            stopDueToLimit = false;
+//        }
 
         if (RobotBase.isReal()) {
             // Update gamepiece tracking
@@ -130,6 +132,11 @@ public class EndEffectorArmSubsystem {
             );
         }
         LoggedTracer.record("EndEffectorArm");
+
+        SmartDashboard.putNumber("EndEffector/CurrentPositionDegs", armPivotIOInputs.currentAngleDeg);
+        SmartDashboard.putNumber("EndEffector/TargetPositionDegs", armPivotIOInputs.targetAngleDeg);
+        SmartDashboard.putBoolean("Beambreaks/HasCoralAtEE", hasCoral);
+        SmartDashboard.putBoolean("Beambreaks/HasAlgae", hasAlgae);
     }
 
 

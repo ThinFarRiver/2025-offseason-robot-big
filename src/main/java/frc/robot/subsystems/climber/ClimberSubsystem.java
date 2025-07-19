@@ -1,5 +1,6 @@
 package frc.robot.subsystems.climber;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.Timer;
 import lib.ntext.NTParameter;
@@ -53,6 +54,9 @@ public class ClimberSubsystem extends SubsystemBase {
         spikeDetectionStartTime > 0 ? Timer.getFPGATimestamp() - spikeDetectionStartTime : 0.0);
     Logger.recordOutput("Climber/AutoClimb/AutoClimbEnabled", autoClimbEnabled);
 
+    SmartDashboard.putNumber("Climber/CurrentAngleDegs", inputs.currentPositionDeg);
+    SmartDashboard.putNumber("Climber/TargetAngleDegs", inputs.targetPositionDeg);
+
     if (newState != systemState) {
       systemState = newState;
       // Reset auto climb detection when transitioning to new state
@@ -83,6 +87,11 @@ public class ClimberSubsystem extends SubsystemBase {
           ClimberParamsNT.Acceleration.getValue(),
           ClimberParamsNT.Jerk.getValue()
       );
+  }
+
+  public void forceClimb() {
+    wantedState = WantedState.CLIMB;
+    System.out.println("Forced Climbing!");
   }
 
   private void detectAutoClimb() {

@@ -78,6 +78,10 @@ public class IntakeSubsystem {
             SmartDashboard.putBoolean("GamePiece/IndexRollerHasCoral", indexRollerHasCoral);
         }
         LoggedTracer.record("Intake");
+
+        SmartDashboard.putNumber("Intake/CurrentPositionDegs", intakePivotIOInputs.currentAngleDeg);
+        SmartDashboard.putNumber("Intake/TargetPositionDegs", intakePivotIOInputs.targetAngleDeg);
+        SmartDashboard.putBoolean("Beambreaks/HasCoralAtIndexer", indexRollerHasCoral);
     }
 
     /**

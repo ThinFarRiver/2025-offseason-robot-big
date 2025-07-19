@@ -2,6 +2,7 @@ package frc.robot.subsystems.superstructure;
 
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -286,6 +287,11 @@ public class Superstructure extends SubsystemBase {
 
         // Record cycle time
         LoggedTracer.record("Superstructure");
+
+        SmartDashboard.putString("Superstructure/State", state != null ? state.toString() : "Null");
+        SmartDashboard.putString("Superstructure/Next", next != null ? next.toString() : "Null");
+        SmartDashboard.putString("Superstructure/Goal", goal != null ? goal.toString() : "Null");
+        SmartDashboard.putBoolean("Superstructure/PoseAtGoal", poseAtGoal());
     }
 
     @AutoLogOutput(key = "Superstructure/AtGoal")
