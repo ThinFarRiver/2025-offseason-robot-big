@@ -188,7 +188,7 @@ public class ClimberSubsystem extends SubsystemBase {
 
     static final double DeployAngle = 0;
     static final double IdleAngle = 0;
-    static final double ClimbAngle = -650.0;
+    static final double ClimbAngle = -400.0;
     
     // Auto climb parameters
     static final double SpikeCurrentThreshold = 20.0;  // Amps threshold to detect current spike
