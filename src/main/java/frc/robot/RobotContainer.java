@@ -15,9 +15,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.auto.AutoActions;
 import frc.robot.commands.CoralIntakeAssistCommand;
@@ -84,7 +82,7 @@ import static frc.robot.RobotConstants.LimelightConstants.LIMELIGHT_RIGHT;
 public class RobotContainer {
   // Controllers
   private final CommandXboxController driverController = new CommandXboxController(0);
-  private final CommandGenericHID streamDeckController = new CommandGenericHID(1);
+  private final CommandXboxController operatorController = new CommandXboxController(1);
   private final CommandXboxController testerController = new CommandXboxController(2);
   // Update Manager
   private final DestinationSupplier destinationSupplier = DestinationSupplier.getInstance();
@@ -202,7 +200,7 @@ public class RobotContainer {
     AutoActions.init(swerve, superstructure, indicatorSubsystem, photonVisionSubsystem);
 
     configureDriverBindings();
-    configureStreamDeckBindings();
+    configOperatorBindings();
     configureTesterBindings();
     configureOthers();
   }
@@ -219,15 +217,15 @@ public class RobotContainer {
             DegreesPerSecond.of(3.0)));
 
     driverController.start().onTrue(
-          SwerveCommands.resetAngle(swerve, () -> AllianceFlipUtil.shouldFlip() ? Rotation2d.kZero : Rotation2d.k180deg)
-                  .alongWith(
-                      Commands.runOnce(() -> {
-                        RobotStateRecorder.getInstance().resetTransform(
-                            TransformRecorder.kFrameWorld,
-                            TransformRecorder.kFrameRobot);
-                        indicatorSubsystem.indicateWithTimeout(IndicatorIO.Patterns.RESET_ODOM, 0.5).schedule();
-                      }))
-                  .ignoringDisable(true)
+        SwerveCommands.resetAngle(swerve, () -> AllianceFlipUtil.shouldFlip() ? Rotation2d.kZero : Rotation2d.k180deg)
+            .alongWith(
+                Commands.runOnce(() -> {
+                  RobotStateRecorder.getInstance().resetTransform(
+                      TransformRecorder.kFrameWorld,
+                      TransformRecorder.kFrameRobot);
+                  indicatorSubsystem.indicateWithTimeout(IndicatorIO.Patterns.RESET_ODOM, 0.5).schedule();
+                }))
+            .ignoringDisable(true)
     );
 
     // INTAKE and OUTTAKE
@@ -377,7 +375,65 @@ public class RobotContainer {
 //    );
   }
 
-  private void configureStreamDeckBindings() {
+  private void configOperatorBindings() {
+    operatorController.leftBumper().whileTrue(
+        superstructure.runGoal(() -> SuperstructureState.L4)
+            .until(testerController.rightTrigger())
+            .andThen(
+                superstructure.runGoal(() -> SuperstructureState.L4_EJECT)
+                    .until(() -> !superstructure.hasCoral()))
+    );
+    operatorController.leftTrigger().whileTrue(
+        superstructure.runGoal(() -> SuperstructureState.L3)
+            .until(testerController.rightTrigger())
+            .andThen(
+                superstructure.runGoal(() -> SuperstructureState.L3_EJECT)
+                    .until(() -> !superstructure.hasCoral()))
+    );
+    operatorController.back().whileTrue(
+        superstructure.runGoal(() -> SuperstructureState.L2)
+            .until(testerController.rightTrigger())
+            .andThen(
+                superstructure.runGoal(() -> SuperstructureState.L2_EJECT)
+                    .until(() -> !superstructure.hasCoral()))
+    );
+    operatorController.rightBumper().whileTrue(
+        superstructure.runGoal(() -> SuperstructureState.NET_SCORE)
+            .until(testerController.rightTrigger())
+            .andThen(
+                Commands.runOnce(() -> netEjectTimer.reset())
+                    .andThen(superstructure.runGoal(() -> SuperstructureState.NET_SCORE_EJECT)
+                        .until(() -> netEjectTimer.update(!superstructure.hasAlgae()))))
+    );
+
+    operatorController.x().whileTrue(
+        superstructure.runGoal(() -> SuperstructureState.P1)
+            .until(() -> superstructure.hasAlgae()
+            ));
+    operatorController.y().whileTrue(
+        superstructure.runGoal(() -> SuperstructureState.P1)
+            .until(() -> superstructure.hasAlgae()
+            ));
+    operatorController
+        .a()
+        .toggleOnTrue(
+            Commands.parallel(
+                    new CoralIntakeAssistCommand(
+                        swerve,
+                        () -> -driverController.getLeftY(),
+                        () -> -driverController.getLeftX(),
+                        () -> -driverController.getRightX(),
+                        RobotStateRecorder::getPoseDriverRobotCurrent,
+                        MetersPerSecond.of(0.04),
+                        DegreesPerSecond.of(3.0)
+                    ),
+                    superstructure.runGoal(this::determineIntakeState)
+                ).until(this::isIntakeComplete)
+                .andThen(() -> {
+                      indicatorSubsystem.indicateWithTimeout(IndicatorIO.Patterns.AFTER_INTAKE, 0.5).schedule();
+                    }
+                )
+        );
 
   }
 

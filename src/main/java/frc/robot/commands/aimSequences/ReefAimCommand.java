@@ -256,6 +256,13 @@ public class ReefAimCommand extends Command {
     SmartDashboard.putBoolean(kTag + "/imuPitchStable", imuPitchStable);
     SmartDashboard.putBoolean(kTag + "/imuRollStable", imuRollStable);
 
+    SmartDashboard.putNumber(kTag + "/xCurr", poseRobotTarget.getTranslation().getX());
+    SmartDashboard.putNumber(kTag + "/yCurr", poseRobotTarget.getTranslation().getY());
+    SmartDashboard.putNumber(kTag + "/rotationCurr", poseRobotTarget.getRotation().getDegrees());
+    SmartDashboard.putNumber(kTag + "/xVelCurr", velocityRobot.getX());
+    SmartDashboard.putNumber(kTag + "/yVelCurr", velocityRobot.getY());
+    SmartDashboard.putNumber(kTag + "/rotationVelCurr", velocityRobot.getRotation().getDegrees());
+
     return (
         xOnTarget && xStationary && yOnTarget && yStationary && rotationOnTarget && rotationStationary
         && imuPitchStable && imuRollStable
