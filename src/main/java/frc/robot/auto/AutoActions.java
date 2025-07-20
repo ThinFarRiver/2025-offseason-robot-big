@@ -65,7 +65,7 @@ public class AutoActions {
       Rotation2d.fromDegrees(180)
   );
   public static final RotationTarget kLeftClearanceAngle = new RotationTarget(
-      0.70, Rotation2d.fromDegrees(-13)
+      0.70, Rotation2d.fromDegrees(-17)
   );
 
   public static final Pose2d kRightStartPose = new Pose2d(
@@ -89,6 +89,10 @@ public class AutoActions {
       Rotation2d.fromDegrees(-180)
   );
 
+  public static final RotationTarget kRightClearanceAngle = new RotationTarget(
+    0.70, Rotation2d.fromDegrees(17)
+);
+
   static {
     Logger.recordOutput("Auto/LeftStartPose", kLeftStartPose);
     Logger.recordOutput("Auto/LeftClearance", kLeftClearance);
@@ -103,9 +107,7 @@ public class AutoActions {
     Logger.recordOutput("Auto/RightEnd", kRightEnd);
   }
 
-  public static final RotationTarget kRightClearanceAngle = new RotationTarget(
-      0.70, Rotation2d.fromDegrees(13)
-  );
+
 
   public static Swerve swerve;
   public static Superstructure superstructure;
@@ -539,7 +541,7 @@ public class AutoActions {
     static final double LeftTriangleX = 2.1;
     static final double LeftTriangleY = 6.6;
     static final double BoundaryOffset = 0.0;
-    static final double StopLookforward = 15.0;
+    static final double StopLookforward = 10.0;
   }
 
 }

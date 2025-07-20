@@ -355,14 +355,14 @@ public class AimGoalSupplier {
   private static class AimParams {
     static final double MaxDistanceReefLineup = 0.75;
     static final double RobotToPipeXMeters = 0.54;
-    static final double RobotToPipeYMeters = -0.03;
+    static final double RobotToPipeYMeters = -0.01;
 
     static final double RobotToAlgaeMeters = 0.4;
     static final double AlgaeToTagMeters = 0.2;
     static final double HexagonDangerZoneOffset = 0.3;
     static final double HexagonDangerDegrees = 45.0;
     static final double ShiftingTerminate = 0.2;
-    static final double NetClearanceDistance = 0.8;
+    static final double NetClearanceDistance = 0.85;
     static final double NetNearDistance = 1.35;
   }
 
