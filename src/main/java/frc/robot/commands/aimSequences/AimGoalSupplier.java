@@ -362,7 +362,7 @@ public class AimGoalSupplier {
     static final double HexagonDangerZoneOffset = 0.3;
     static final double HexagonDangerDegrees = 45.0;
     static final double ShiftingTerminate = 0.2;
-    static final double NetClearanceDistance = 0.9;
+    static final double NetClearanceDistance = 0.8;
     static final double NetNearDistance = 1.35;
   }
 
