@@ -141,11 +141,6 @@ public class CoralRecorder {
     }
   }
 
-  private boolean epsilonEqualsNorm(Translation2d loc, Translation2d kleftlollipop2, double lollipopCapture) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'epsilonEqualsNorm'");
-  }
-
   public Optional<CoralInfo> getNearestCoral(Pose2d robotPose) {
     var pRobot = robotPose.getTranslation();
     CoralInfo nearest = null;
@@ -210,6 +205,7 @@ public class CoralRecorder {
       return Optional.of(mostAligned);
     return Optional.empty();
   }
+
 
   public Optional<CoralInfo> getNearestCoralInSight(Pose2d robotPose, Angle insightAngle) {
     var pRobot = robotPose.getTranslation();
