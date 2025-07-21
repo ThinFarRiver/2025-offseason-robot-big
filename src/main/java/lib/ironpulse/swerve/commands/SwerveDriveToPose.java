@@ -113,6 +113,8 @@ public class SwerveDriveToPose extends Command {
     
     boolean translationOnTarget = epsilonEquals(TRT.getTranslation().toTranslation2d(), new Translation2d(), tolTransM);
     boolean rotationOnTarget = epsilonEquals(TRT.getRotation().toRotation2d().getDegrees(), 0.0, tolRotDeg);
+    Logger.recordOutput(kTag + "/translationOnTarget", translationOnTarget);
+    Logger.recordOutput(kTag + "/rotationOnTarget", rotationOnTarget);
     return translationOnTarget && rotationOnTarget;
   }
 

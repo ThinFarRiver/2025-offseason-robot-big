@@ -496,9 +496,9 @@ public final class RobotConstants {
         0.0);
 
     public static final TunableNumber motionAccelerationDown = new TunableNumber("Elevator/MotionAccelerationDown",
-        120);
+        150);
     public static final TunableNumber motionCruiseVelocityDown = new TunableNumber("Elevator/MotionCruiseVelocityDown",
-        100);
+        120);
     public static final TunableNumber motionJerkDown = new TunableNumber("Elevator/MotionJerkDown",
         0.0);
     public static final TunableNumber MAX_EXTENSION_METERS = new TunableNumber("Elevator/maxExtension",
