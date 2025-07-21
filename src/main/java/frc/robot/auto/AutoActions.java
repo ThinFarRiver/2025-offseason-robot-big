@@ -339,6 +339,20 @@ public class AutoActions {
         .ignoringDisable(true);
   }
 
+  public static Command resetOnPoseTester(Pose2d pose) {
+    var resetPose = new Pose3d(AllianceFlipUtil.apply(pose));
+
+    return SwerveCommands.reset(swerve, resetPose)
+        .alongWith(runOnce(
+            () -> {
+              RobotStateRecorder.getInstance().resetTransform(
+                  TransformRecorder.kFrameWorld,
+                  TransformRecorder.kFrameRobot
+              );
+            }))
+        .ignoringDisable(true);
+  }
+
   public static Command resetOnPathStart(PathPlannerPath path) {
     var realPath = AllianceFlipUtil.shouldFlip() ? path.flipPath() : path;
 

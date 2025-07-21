@@ -413,7 +413,7 @@ public class RobotContainer {
     //         .until(() -> superstructure.hasAlgae()
     //         ));
     operatorController.x().onTrue(
-      AutoActions.resetOnPose(kLeftBackoff).alongWith(print("testing reset"))
+      AutoActions.resetOnPoseTester(kLeftBackoff).alongWith(print("testing reset"))
       .ignoringDisable(true)
     );
     operatorController.y().whileTrue(
